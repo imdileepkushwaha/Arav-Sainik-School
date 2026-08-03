@@ -1,0 +1,658 @@
+/* Student ID Card — identical to admin ID card design */
+.id-card-page {
+    --card-w: 400px;
+    --card-h: 252px;
+    --card-head: 54px;
+    --card-foot-front: 50px;
+    --card-foot-back: 28px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(160deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%);
+    min-height: 100vh;
+    padding: 72px 20px 40px;
+    box-sizing: border-box;
+}
+
+.id-card-page *,
+.id-card-page *::before,
+.id-card-page *::after {
+    box-sizing: border-box;
+}
+
+.id-card-page-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.id-card-page-header h2 {
+    font-size: 1.3rem;
+    color: #0f172a;
+    margin-bottom: 6px;
+}
+
+.id-card-page-header p {
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.id-cards-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+.id-card-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 400px;
+}
+
+.id-card-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #64748b;
+    background: #fff;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.id-card-page .id-card {
+    width: var(--card-w);
+    height: var(--card-h);
+    min-height: var(--card-h);
+    max-height: var(--card-h);
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(148, 163, 184, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.id-card-page .id-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #047857, #10b981, #34d399, #10b981, #047857);
+    border-radius: 16px 16px 0 0;
+}
+
+.id-card-page .id-front .card-top,
+.id-card-page .id-back .card-top {
+    background: linear-gradient(135deg, #065f46 0%, #059669 45%, #10b981 100%);
+    color: #fff;
+    height: var(--card-head);
+    min-height: var(--card-head);
+    max-height: var(--card-head);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.id-card-page .id-front .card-top {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.id-card-page .id-back .card-top {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.id-card-page .mag-line {
+    height: 12px;
+    width: 100%;
+    background: linear-gradient(180deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+    flex-shrink: 0;
+}
+
+.id-card-page .id-back .card-top h2 {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 12px;
+    margin: 0;
+}
+
+.id-card-page .school-logo {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.id-card-page .school-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 3px;
+}
+
+.id-card-page .school-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.id-card-page .school-info h1 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.id-card-page .school-info p {
+    font-size: 0.65rem;
+    opacity: 0.92;
+    margin-top: 2px;
+}
+
+.id-card-page .card-type-badge {
+    background: rgba(255, 255, 255, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+}
+
+.id-card-page .id-front .card-main,
+.id-card-page .id-back .card-main {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.id-card-page .id-front .card-main {
+    padding: 10px 16px 8px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.id-card-page .id-back .card-main {
+    padding: 8px 14px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.id-card-page .photo-block {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.id-card-page .id-photo {
+    width: 68px;
+    height: 82px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2.5px solid #059669;
+    background: #f1f5f9;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+
+.id-card-page .photo-tag {
+    font-size: 0.55rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
+
+.id-card-page .student-block {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+}
+
+.id-card-page .student-name {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.id-card-page .student-meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.id-card-page .meta-pill {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.id-card-page .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 10px;
+}
+
+.id-card-page .info-item {
+    min-width: 0;
+}
+
+.id-card-page .info-item .lbl {
+    display: block;
+    font-size: 0.58rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1px;
+}
+
+.id-card-page .info-item .val {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #1e293b;
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+.id-card-page .id-front .card-bottom,
+.id-card-page .id-back .card-bottom {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.id-card-page .id-front .card-bottom {
+    height: var(--card-foot-front);
+    min-height: var(--card-foot-front);
+    max-height: var(--card-foot-front);
+    padding: 4px 12px 5px;
+    background: linear-gradient(90deg, #f0fdf4, #ecfdf5);
+    border-top: 1px solid #bbf7d0;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.id-card-page .bottom-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+    min-width: 72px;
+    padding-bottom: 1px;
+}
+
+.id-card-page .id-back .card-bottom {
+    height: var(--card-foot-back);
+    min-height: var(--card-foot-back);
+    max-height: var(--card-foot-back);
+    padding: 0 14px;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+    justify-content: center;
+}
+
+.id-card-page .valid-tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #047857;
+}
+
+.id-card-page .valid-dot {
+    width: 7px;
+    height: 7px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+}
+
+.id-card-page .issue-date {
+    font-size: 0.62rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.id-card-page .back-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    flex: 1;
+    min-height: 0;
+}
+
+.id-card-page .back-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 5px 8px;
+    overflow: hidden;
+}
+
+.id-card-page .back-box.full {
+    grid-column: 1 / -1;
+}
+
+.id-card-page .back-box h3 {
+    font-size: 0.54rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #059669;
+    font-weight: 700;
+    margin: 0 0 3px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid #d1fae5;
+}
+
+.id-card-page .back-box p {
+    font-size: 0.6rem;
+    color: #334155;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+}
+
+.id-card-page .back-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 0.6rem;
+    padding: 1px 0;
+}
+
+.id-card-page .back-line span {
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+.id-card-page .back-line strong {
+    color: #0f172a;
+    text-align: right;
+    word-break: break-word;
+    font-weight: 600;
+}
+
+.id-card-page .back-terms {
+    font-size: 0.52rem;
+    color: #94a3b8;
+    line-height: 1.3;
+    padding: 4px 8px;
+    background: #fafafa;
+    border-radius: 6px;
+    border: 1px dashed #e2e8f0;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.id-card-page .sign-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    align-self: stretch;
+    min-width: 0;
+    padding: 0 4px;
+    height: 100%;
+}
+
+.id-card-page .sign-img {
+    display: block;
+    max-height: 22px;
+    max-width: 92px;
+    object-fit: contain;
+    margin: 0 auto -1px;
+}
+
+.id-card-page .sign-line {
+    width: 78px;
+    border-top: 1.5px solid #64748b;
+    margin: 0 auto 2px;
+}
+
+.id-card-page .sign-area span {
+    display: block;
+    font-size: 0.52rem;
+    color: #64748b;
+    font-weight: 600;
+    line-height: 1.15;
+    white-space: nowrap;
+    padding-bottom: 1px;
+}
+
+.id-card-page .id-code-block {
+    flex-shrink: 0;
+    text-align: center;
+    min-width: 56px;
+    align-self: flex-end;
+    padding-bottom: 1px;
+}
+
+.id-card-page .qr-box {
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;
+    border: 2px solid #059669;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #059669;
+    font-size: 0.85rem;
+}
+
+.id-card-page .id-code {
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 2px;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+    word-break: break-all;
+}
+
+.id-card-page .back-footer-text {
+    font-size: 0.58rem;
+    color: #64748b;
+    font-weight: 600;
+    text-align: center;
+    width: 100%;
+}
+
+.id-card-print-actions {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+}
+
+.id-card-print-btn {
+    background: #059669;
+    color: #fff;
+    border: none;
+    padding: 11px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+}
+
+.id-card-print-btn:hover {
+    background: #047857;
+}
+
+.id-card-print-btn.outline {
+    background: #fff;
+    color: #059669;
+    border: 1.5px solid #059669;
+    box-shadow: none;
+}
+
+/* Embedded inside the student profile card — strip the full-page chrome */
+.id-card-embed {
+    background: none !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+}
+
+.id-card-embed .id-cards-wrap {
+    gap: 28px;
+}
+
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 12mm;
+    }
+
+    .id-card-page {
+        background: #fff;
+        padding: 0;
+        --card-w: 85.6mm;
+        --card-h: 53.98mm;
+        --card-head: 14mm;
+        --card-foot-front: 11mm;
+        --card-foot-back: 6mm;
+    }
+
+    .id-card-print-actions,
+    .id-card-page-header,
+    .id-card-label {
+        display: none !important;
+    }
+
+    .id-cards-wrap {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 12mm;
+        page-break-inside: avoid;
+    }
+
+    .id-card-col {
+        width: 85.6mm;
+    }
+
+    .id-card-page .id-card {
+        width: 85.6mm;
+        height: 53.98mm;
+        min-height: 53.98mm;
+        max-height: 53.98mm;
+        border-radius: 3mm;
+        box-shadow: none;
+        border: 0.3mm solid #94a3b8;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        page-break-inside: avoid;
+    }
+}
+
+@media (max-width: 440px) {
+    .id-card-col {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .id-card-page .id-card {
+        width: 100%;
+    }
+
+    .id-card-page .info-grid,
+    .id-card-page .back-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Click-to-flip mode (used on the profile page embed) */
+.id-card-flip {
+    perspective: 1600px;
+    cursor: pointer;
+}
+.id-card-flip .id-card-label {
+    display: none;
+}
+.id-card-flip .id-cards-wrap {
+    display: block;
+    position: relative;
+    width: 100%;
+    max-width: var(--card-w);
+    height: var(--card-h);
+    margin: 0 auto;
+    gap: 0;
+    transform-style: preserve-3d;
+    transition: transform .7s cubic-bezier(.2, .7, .2, 1);
+}
+.id-card-flip.is-flipped .id-cards-wrap {
+    transform: rotateY(180deg);
+}
+.id-card-flip .id-card-col {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: var(--card-h);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+.id-card-flip .id-card-col:nth-child(2) {
+    transform: rotateY(180deg);
+}
+.id-card-flip .id-card {
+    width: 100%;
+    max-width: var(--card-w);
+}
