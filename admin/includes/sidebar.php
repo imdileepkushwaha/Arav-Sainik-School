@@ -4,7 +4,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 $admin_name = htmlspecialchars(ucfirst($_SESSION['admin_username']));
 $avatar_url = 'https://ui-avatars.com/api/?name=' . urlencode($_SESSION['admin_username']) . '&background=059669&color=fff&bold=true';
 
-$student_pages = ['students.php', 'student_add.php', 'student_edit.php', 'student_view.php', 'student_suspend.php', 'student_categories.php', 'student_import.php', 'student_promote.php', 'student_promote_advanced.php', 'student_id_card.php', 'student_documents.php', 'classes.php', 'portal_accounts.php', 'admission_enquiries.php'];
+$student_pages = ['students.php', 'student_add.php', 'student_edit.php', 'student_view.php', 'student_suspend.php', 'student_categories.php', 'student_import.php', 'student_promote.php', 'student_promote_advanced.php', 'student_id_card.php', 'student_documents.php', 'classes.php', 'portal_accounts.php', 'admission_enquiries.php', 'toppers.php'];
 $academic_pages = ['academic_sessions.php', 'subjects.php', 'class_timetable.php', 'notices.php', 'homework.php'];
 $attendance_pages = ['attendance.php', 'attendance_report.php'];
 $fee_pages = ['fees.php', 'fee_collect.php', 'fee_receipt.php', 'fee_reports.php'];
@@ -64,6 +64,7 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                     <li class="<?php echo ($current_page == 'student_promote_advanced.php') ? 'active' : ''; ?>"><a href="student_promote_advanced.php">Promote (Selected)</a></li>
                     <li class="<?php echo ($current_page == 'student_import.php') ? 'active' : ''; ?>"><a href="student_import.php">Import</a></li>
                     <li class="<?php echo ($current_page == 'student_categories.php') ? 'active' : ''; ?>"><a href="student_categories.php">Categories</a></li>
+                    <li class="<?php echo ($current_page == 'toppers.php') ? 'active' : ''; ?>"><a href="toppers.php">Topper Manage</a></li>
                     <li class="<?php echo ($current_page == 'student_suspend.php') ? 'active' : ''; ?>"><a href="student_suspend.php">Suspend</a></li>
                     <li class="<?php echo ($current_page == 'portal_accounts.php') ? 'active' : ''; ?>"><a href="portal_accounts.php">Student Portal</a></li>
                     <li class="<?php echo ($current_page == 'admission_enquiries.php') ? 'active' : ''; ?>"><a href="admission_enquiries.php">Admission Enquiries</a></li>

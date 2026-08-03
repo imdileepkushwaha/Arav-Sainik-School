@@ -8,11 +8,17 @@ require_once 'includes/teacher_helpers.php';
 ensureErpSchema($pdo);
 ensureTeacherSchema($pdo);
 
-$date = $_GET['date'] ?? date('Y-m-d');
+$serverToday = schoolToday();
+$rawDate = trim($_GET['date'] ?? '');
+$dateExplicit = (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDate);
+$date = $dateExplicit ? $rawDate : $serverToday;
+$needsClientTodaySync = empty($_GET['client_today_synced'])
+    && ($_SERVER['REQUEST_METHOD'] !== 'POST')
+    && (!$dateExplicit || $rawDate === $serverToday);
 $teachers = getAllTeachers($pdo, true);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attendance'])) {
-    $date = $_POST['attendance_date'] ?? date('Y-m-d');
+    $date = $_POST['attendance_date'] ?? schoolToday();
     $teacherId = (int) ($_POST['teacher_id'] ?? 0);
     if ($teacherId > 0) {
         $pdo->prepare("DELETE FROM teacher_attendance WHERE teacher_id = ? AND attendance_date = ?")
@@ -24,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_attendance']))
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_attendance'])) {
-    $date = $_POST['attendance_date'] ?? date('Y-m-d');
+    $date = $_POST['attendance_date'] ?? schoolToday();
     $statuses = $_POST['status'] ?? [];
     $stmt = $pdo->prepare(
         "INSERT INTO teacher_attendance (teacher_id, attendance_date, status) VALUES (?,?,?)
@@ -66,10 +72,25 @@ foreach ($teachers as $t) {
     }
 }
 
-$isToday = ($date === date('Y-m-d'));
+$isToday = ($date === $serverToday);
 $dateLabel = date('l, d M Y', strtotime($date));
 
 require_once 'includes/header.php';
+if (!empty($needsClientTodaySync)): ?>
+<script>
+(function () {
+    var d = new Date();
+    var browserToday = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    var params = new URLSearchParams(window.location.search);
+    params.set('date', browserToday);
+    params.set('client_today_synced', '1');
+    window.location.replace('teacher_attendance.php?' + params.toString());
+})();
+</script>
+<?php
+    require_once 'includes/footer.php';
+    exit;
+endif;
 ?>
 
 <div class="content-top-bar">

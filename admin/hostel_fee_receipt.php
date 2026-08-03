@@ -37,6 +37,20 @@ $autoPrint = isset($_GET['print']);
 
 $feeMonth = paymentRecordFeeMonth($p);
 $feeMonthLabel = $feeMonth ? getFeeMonthFullLabel($feeMonth) : '';
+$installmentNo = (int) ($p['installment_no'] ?? 0);
+if ($installmentNo < 1 && preg_match('/\[installment:(\d+)\]/', (string) ($p['remarks'] ?? ''), $mInst)) {
+    $installmentNo = (int) $mInst[1];
+}
+$feeForLabel = $installmentNo > 0
+    ? ('Installment ' . $installmentNo)
+    : ($feeMonthLabel ?: '—');
+$planLabel = '';
+if (!empty($p['plan_id'])) {
+    $planRow = getHostelFeePlanById($pdo, (int) $p['plan_id']);
+    if ($planRow) {
+        $planLabel = $planRow['name'] . (!empty($planRow['installment_label']) ? ' (' . $planRow['installment_label'] . ')' : '');
+    }
+}
 $paymentDateLabel = !empty($p['payment_date']) ? date('d M Y', strtotime($p['payment_date'])) : '—';
 $hostelInfo = getStudentHostelDetails($pdo, (int) $p['student_id']);
 $displayRemarks = formatPaymentRemarksForDisplay($p['remarks'] ?? '');
@@ -108,7 +122,7 @@ $amountWords = feeReceiptAmountInWords((float) $p['amount']);
 
         <div class="rc-meta">
             <div class="rc-meta-item"><span>Receipt No</span><strong><?php echo htmlspecialchars($p['receipt_no']); ?></strong></div>
-            <div class="rc-meta-item"><span>Fee For</span><strong class="rc-fee-month-badge"><?php echo htmlspecialchars($feeMonthLabel ?: '—'); ?></strong></div>
+            <div class="rc-meta-item"><span>Fee For</span><strong class="rc-fee-month-badge"><?php echo htmlspecialchars($feeForLabel); ?></strong></div>
             <div class="rc-meta-item"><span>Paid On</span><strong><?php echo htmlspecialchars($paymentDateLabel); ?></strong></div>
             <div class="rc-meta-item"><span>Status</span><strong class="rc-status">Paid</strong></div>
         </div>
@@ -137,7 +151,10 @@ $amountWords = feeReceiptAmountInWords((float) $p['amount']);
                 <tbody>
                     <tr>
                         <td>
-                            Hostel Fee<?php echo $feeMonthLabel ? ' · ' . htmlspecialchars($feeMonthLabel) : ''; ?>
+                            Hostel Fee<?php echo $feeForLabel !== '—' ? ' · ' . htmlspecialchars($feeForLabel) : ''; ?>
+                            <?php if ($planLabel !== ''): ?>
+                            <div style="font-size:0.58rem;color:#64748b;margin-top:2px"><?php echo htmlspecialchars($planLabel); ?></div>
+                            <?php endif; ?>
                             <?php if ($displayRemarks !== ''): ?>
                             <div style="font-size:0.58rem;color:#64748b;margin-top:2px"><?php echo htmlspecialchars($displayRemarks); ?></div>
                             <?php endif; ?>

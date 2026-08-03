@@ -59,6 +59,7 @@ $pages = [
     ['title' => 'Promote Students', 'url' => 'student_promote.php', 'icon' => 'fa-arrow-up', 'meta' => 'Students', 'kw' => 'promote promotion upgrade'],
     ['title' => 'Student ID Cards', 'url' => 'student_id_card.php', 'icon' => 'fa-id-card', 'meta' => 'Students', 'kw' => 'id card identity card'],
     ['title' => 'Student Portal Accounts', 'url' => 'portal_accounts.php', 'icon' => 'fa-key', 'meta' => 'Students', 'kw' => 'portal accounts login credentials'],
+    ['title' => 'Topper Manage', 'url' => 'toppers.php', 'icon' => 'fa-trophy', 'meta' => 'Students', 'kw' => 'topper toppers results website pride rank'],
     ['title' => 'Admission Enquiries', 'url' => 'admission_enquiries.php', 'icon' => 'fa-clipboard-list', 'meta' => 'Students', 'kw' => 'admission enquiry enquiries lead'],
     ['title' => 'Academic Sessions', 'url' => 'academic_sessions.php', 'icon' => 'fa-calendar-alt', 'meta' => 'Academic', 'kw' => 'session academic year'],
     ['title' => 'Subjects', 'url' => 'subjects.php', 'icon' => 'fa-book', 'meta' => 'Academic', 'kw' => 'subjects subject'],

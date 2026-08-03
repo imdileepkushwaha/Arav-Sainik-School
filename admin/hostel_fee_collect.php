@@ -6,6 +6,7 @@ require_once 'includes/erp_helpers.php';
 
 ensureErpSchema($pdo);
 $session = getCurrentSession($pdo);
+$sessionId = $session['id'] ?? null;
 $student = null;
 $feeSummary = null;
 $studentId = (int) ($_GET['student_id'] ?? $_POST['student_id'] ?? 0);
@@ -19,57 +20,146 @@ if ($studentId) {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_hostel_plan']) && $student) {
+    $planId = (int) ($_POST['plan_id'] ?? 0);
+    if (!studentHasActiveHostel($pdo, $studentId)) {
+        $_SESSION['error_msg'] = 'Student has no active hostel allotment.';
+    } elseif ($planId <= 0) {
+        $_SESSION['error_msg'] = 'Select a payment plan.';
+    } else {
+        $existingPayments = $feeSummary['payments'] ?? [];
+        $currentPlan = $feeSummary['plan'] ?? null;
+        if ($currentPlan && !empty($existingPayments) && (int) $currentPlan['id'] !== $planId) {
+            $_SESSION['error_msg'] = 'Cannot change plan after payments are recorded.';
+        } else {
+            try {
+                assignStudentHostelPlan($pdo, $studentId, $planId, $sessionId);
+                $_SESSION['success_msg'] = 'Hostel payment plan assigned.';
+            } catch (Throwable $e) {
+                $_SESSION['error_msg'] = $e->getMessage();
+            }
+        }
+    }
+    header('Location: hostel_fee_collect.php?student_id=' . $studentId);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['collect_hostel_fee']) && $student) {
     $amount = (float) ($_POST['amount'] ?? 0);
     $method = trim($_POST['payment_method'] ?? 'Cash');
     $remarks = trim($_POST['remarks'] ?? '');
     $feeMonth = (int) ($_POST['fee_month'] ?? 0);
+    $installmentNo = (int) ($_POST['installment_no'] ?? 0);
+    $feeSummary = getStudentHostelFeeSummary($pdo, $studentId);
+    $plan = $feeSummary['plan'] ?? null;
 
     if (!studentHasActiveHostel($pdo, $studentId)) {
         $_SESSION['error_msg'] = 'Student has no active hostel allotment.';
         header('Location: hostel_fee_collect.php?student_id=' . $studentId);
         exit;
     }
-    if ($feeMonth < 1 || $feeMonth > 12) {
-        $_SESSION['error_msg'] = 'Select a valid fee month.';
+    if (!$plan) {
+        $_SESSION['error_msg'] = 'Assign a payment plan first.';
         header('Location: hostel_fee_collect.php?student_id=' . $studentId);
         exit;
     }
-    $monthStatuses = getStudentHostelMonthlyFeeStatuses($pdo, $studentId);
-    $selectedMonthStatus = null;
-    foreach ($monthStatuses as $ms) {
-        if ((int) $ms['month'] === $feeMonth) {
-            $selectedMonthStatus = $ms;
-            break;
+
+    $planId = (int) $plan['id'];
+    $isInstallment = ($plan['plan_type'] ?? '') === 'installment';
+
+    if ($isInstallment) {
+        if ($installmentNo < 1) {
+            $_SESSION['error_msg'] = 'Select an installment.';
+            header('Location: hostel_fee_collect.php?student_id=' . $studentId);
+            exit;
+        }
+        $statuses = getStudentHostelInstallmentFeeStatuses($pdo, $studentId);
+        $selected = null;
+        foreach ($statuses as $st) {
+            if ((int) $st['installment_no'] === $installmentNo) {
+                $selected = $st;
+                break;
+            }
+        }
+        if ($selected && ($selected['status'] ?? '') === 'paid') {
+            $_SESSION['error_msg'] = 'This installment is already fully paid.';
+            header('Location: hostel_fee_collect.php?student_id=' . $studentId);
+            exit;
+        }
+        if ($amount > 0) {
+            $remarks = appendHostelInstallmentToRemarks($installmentNo, $remarks);
+            if ((float) ($plan['discount_amount'] ?? 0) > 0) {
+                $remarks = trim($remarks . ' [discount:' . (float) $plan['discount_amount'] . ']');
+            }
+            $receipt = generateHostelReceiptNo($pdo);
+            $insert = $pdo->prepare(
+                "INSERT INTO hostel_fee_payments
+                 (student_id, amount, payment_date, fee_month, installment_no, plan_id, payment_method, receipt_no, session_id, remarks)
+                 VALUES (?,?,?,?,?,?,?,?,?,?)"
+            );
+            $insert->execute([
+                $studentId,
+                $amount,
+                date('Y-m-d'),
+                null,
+                $installmentNo,
+                $planId,
+                $method,
+                $receipt,
+                $sessionId,
+                $remarks,
+            ]);
+            $paymentId = (int) $pdo->lastInsertId();
+            $_SESSION['success_msg'] = 'Hostel fee collected. Receipt: ' . $receipt;
+            header('Location: hostel_fee_receipt.php?id=' . $paymentId);
+            exit;
+        }
+    } else {
+        if ($feeMonth < 1 || $feeMonth > 12) {
+            $_SESSION['error_msg'] = 'Select a valid fee month.';
+            header('Location: hostel_fee_collect.php?student_id=' . $studentId);
+            exit;
+        }
+        $monthStatuses = getStudentHostelMonthlyFeeStatuses($pdo, $studentId);
+        $selectedMonthStatus = null;
+        foreach ($monthStatuses as $ms) {
+            if ((int) $ms['month'] === $feeMonth) {
+                $selectedMonthStatus = $ms;
+                break;
+            }
+        }
+        if ($selectedMonthStatus && ($selectedMonthStatus['status'] ?? '') === 'paid') {
+            $_SESSION['error_msg'] = 'This month is already fully paid.';
+            header('Location: hostel_fee_collect.php?student_id=' . $studentId);
+            exit;
+        }
+        if ($amount > 0) {
+            $remarks = appendFeeMonthToRemarks($feeMonth, $remarks);
+            $receipt = generateHostelReceiptNo($pdo);
+            $insert = $pdo->prepare(
+                "INSERT INTO hostel_fee_payments
+                 (student_id, amount, payment_date, fee_month, installment_no, plan_id, payment_method, receipt_no, session_id, remarks)
+                 VALUES (?,?,?,?,?,?,?,?,?,?)"
+            );
+            $insert->execute([
+                $studentId,
+                $amount,
+                date('Y-m-d'),
+                $feeMonth,
+                null,
+                $planId,
+                $method,
+                $receipt,
+                $sessionId,
+                $remarks,
+            ]);
+            $paymentId = (int) $pdo->lastInsertId();
+            $_SESSION['success_msg'] = 'Hostel fee collected. Receipt: ' . $receipt;
+            header('Location: hostel_fee_receipt.php?id=' . $paymentId);
+            exit;
         }
     }
-    if ($selectedMonthStatus && ($selectedMonthStatus['status'] ?? '') === 'paid') {
-        $_SESSION['error_msg'] = 'This month is already fully paid.';
-        header('Location: hostel_fee_collect.php?student_id=' . $studentId);
-        exit;
-    }
-    if ($amount > 0) {
-        $remarks = appendFeeMonthToRemarks($feeMonth, $remarks);
-        $receipt = generateHostelReceiptNo($pdo);
-        $insert = $pdo->prepare(
-            "INSERT INTO hostel_fee_payments (student_id, amount, payment_date, fee_month, payment_method, receipt_no, session_id, remarks)
-             VALUES (?,?,?,?,?,?,?,?)"
-        );
-        $insert->execute([
-            $studentId,
-            $amount,
-            date('Y-m-d'),
-            $feeMonth,
-            $method,
-            $receipt,
-            $session['id'] ?? null,
-            $remarks,
-        ]);
-        $paymentId = (int) $pdo->lastInsertId();
-        $_SESSION['success_msg'] = 'Hostel fee collected. Receipt: ' . $receipt;
-        header('Location: hostel_fee_receipt.php?id=' . $paymentId);
-        exit;
-    }
+
     $_SESSION['error_msg'] = 'Enter a valid amount.';
     header('Location: hostel_fee_collect.php?student_id=' . $studentId);
     exit;
@@ -77,6 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['collect_hostel_fee'])
 
 require_once 'includes/header.php';
 $class_options = getClassOptions($pdo);
+$allPlans = getHostelFeePlans($pdo, $sessionId, true);
 $searchMode = ($_GET['mode'] ?? 'quick') === 'class' ? 'class' : 'quick';
 $searchType = $_GET['type'] ?? 'ad_no';
 if (!in_array($searchType, ['ad_no', 'name', 'roll'], true)) {
@@ -99,12 +190,24 @@ if (!$student) {
     }
 }
 
-$monthStatuses = $student && $feeSummary ? getStudentHostelMonthlyFeeStatuses($pdo, $studentId) : [];
-$collectableMonths = array_values(array_filter($monthStatuses, function ($ms) {
+if ($student && $feeSummary) {
+    $feeSummary = getStudentHostelFeeSummary($pdo, $studentId);
+}
+$plan = $feeSummary['plan'] ?? null;
+$planType = $feeSummary['plan_type'] ?? 'monthly';
+$isInstallmentPlan = $plan && $planType === 'installment';
+$monthStatuses = ($student && $feeSummary && !$isInstallmentPlan) ? getStudentHostelMonthlyFeeStatuses($pdo, $studentId) : [];
+$installmentStatuses = ($student && $feeSummary && $isInstallmentPlan) ? getStudentHostelInstallmentFeeStatuses($pdo, $studentId) : [];
+$collectableMonths = array_values(array_filter($monthStatuses, static function ($ms) {
     return in_array($ms['status'] ?? '', ['pending', 'partial'], true);
 }));
+$collectableInstallments = array_values(array_filter($installmentStatuses, static function ($st) {
+    return in_array($st['status'] ?? '', ['pending', 'partial'], true);
+}));
 $defaultCollectMonth = $collectableMonths ? (int) $collectableMonths[0]['month'] : (int) date('n');
+$defaultInstallment = $collectableInstallments ? (int) $collectableInstallments[0]['installment_no'] : 1;
 $hostelInfo = $feeSummary['hostel'] ?? null;
+$canChangePlan = empty($feeSummary['payments'] ?? []);
 ?>
 <div class="content-top-bar">
     <div class="content-top-main">
@@ -218,6 +321,8 @@ $hostelInfo = $feeSummary['hostel'] ?? null;
 $balance = (float) ($feeSummary['balance'] ?? 0);
 $totalDue = (float) ($feeSummary['total_due'] ?? 0);
 $totalPaid = (float) ($feeSummary['total_paid'] ?? 0);
+$gross = (float) ($feeSummary['gross_amount'] ?? 0);
+$discount = (float) ($feeSummary['discount_amount'] ?? 0);
 ?>
 <div class="fc-layout">
     <aside class="fc-student-panel">
@@ -241,13 +346,42 @@ $totalPaid = (float) ($feeSummary['total_paid'] ?? 0);
         <p class="fc-optional-fee-note"><i class="fas fa-info-circle"></i> No active hostel allotment — hostel fee cannot be collected.</p>
         <?php endif; ?>
 
+        <?php if ($plan): ?>
+        <div class="form-section-card section-mb">
+            <div class="section-card-header">
+                <div class="section-card-icon section-icon-school"><i class="fas fa-layer-group"></i></div>
+                <div>
+                    <h4><?php echo htmlspecialchars($plan['name']); ?></h4>
+                    <p>
+                        <?php echo htmlspecialchars($plan['installment_label'] ?: ''); ?>
+                        <?php if ($discount > 0): ?> · Discount ₹<?php echo number_format($discount, 0); ?><?php endif; ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="fc-summary-grid">
+            <?php if ($gross > 0 && $discount > 0): ?>
+            <div class="fc-summary-card"><span>Gross</span><strong>₹<?php echo number_format($gross, 0); ?></strong></div>
+            <div class="fc-summary-card"><span>Discount</span><strong>₹<?php echo number_format($discount, 0); ?></strong></div>
+            <?php endif; ?>
             <div class="fc-summary-card"><span>Total Due</span><strong>₹<?php echo number_format($totalDue, 0); ?></strong></div>
             <div class="fc-summary-card"><span>Paid</span><strong>₹<?php echo number_format($totalPaid, 0); ?></strong></div>
             <div class="fc-summary-card"><span>Balance</span><strong>₹<?php echo number_format($balance, 0); ?></strong></div>
         </div>
 
-        <?php if ($monthStatuses): ?>
+        <?php if ($isInstallmentPlan && $installmentStatuses): ?>
+        <div class="fc-month-strip">
+            <?php foreach ($installmentStatuses as $st): ?>
+            <div class="fc-month-chip is-<?php echo htmlspecialchars($st['status']); ?>">
+                <span><?php echo htmlspecialchars($st['label']); ?></span>
+                <strong>₹<?php echo number_format($st['due'], 0); ?></strong>
+                <small><?php echo $st['status'] === 'paid' ? 'Cleared' : ('₹' . number_format($st['balance'], 0) . ' due'); ?></small>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php elseif ($monthStatuses): ?>
         <div class="fc-month-strip">
             <?php foreach ($monthStatuses as $ms): ?>
             <div class="fc-month-chip is-<?php echo htmlspecialchars($ms['status']); ?>">
@@ -274,67 +408,162 @@ $totalPaid = (float) ($feeSummary['total_paid'] ?? 0);
             <h3>Allot hostel first</h3>
             <p><a href="hostel.php">Go to Hostel Allotment</a></p>
         </div>
-        <?php elseif ($feeSummary['fee_status'] === 'no_structure'): ?>
-        <div class="empty-state empty-state-md">
-            <h3>No hostel fee structure</h3>
-            <p>Set amounts for this class in <a href="hostel_fees.php?class=<?php echo urlencode($student['class']); ?>">Hostel Fee Structure</a>.</p>
-        </div>
-        <?php elseif (!$collectableMonths): ?>
-        <div class="empty-state empty-state-md">
-            <h3>All months cleared</h3>
-            <p>Hostel fee for this session is fully paid.</p>
-        </div>
-        <?php else: ?>
-        <form method="POST" class="fc-collect-form">
-            <input type="hidden" name="collect_hostel_fee" value="1">
+        <?php elseif (!$plan || $canChangePlan): ?>
+        <form method="POST" class="fc-collect-form section-mb">
+            <input type="hidden" name="assign_hostel_plan" value="1">
             <input type="hidden" name="student_id" value="<?php echo $studentId; ?>">
-            <div class="fc-collect-form-grid">
-                <div class="form-field">
-                    <label>Fee Month</label>
-                    <select name="fee_month" id="hfFeeMonth" class="form-input form-select" required>
-                        <?php foreach ($collectableMonths as $ms): ?>
-                        <option value="<?php echo (int) $ms['month']; ?>"
-                                data-due="<?php echo htmlspecialchars(number_format($ms['balance'], 2, '.', '')); ?>"
-                                <?php echo (int) $ms['month'] === $defaultCollectMonth ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($ms['label']); ?> — ₹<?php echo number_format($ms['balance'], 0); ?> due
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
+            <div class="section-card-header" style="padding:0 0 12px;border:0">
+                <div class="section-card-icon section-icon-school"><i class="fas fa-layer-group"></i></div>
+                <div>
+                    <h4><?php echo $plan ? 'Change Payment Plan' : 'Select Payment Plan'; ?></h4>
+                    <p>Choose how the parent will pay hostel fee this year</p>
                 </div>
-                <div class="form-field">
-                    <label>Amount (₹)</label>
-                    <input type="number" step="0.01" min="0.01" name="amount" id="hfAmount" class="form-input" required>
-                </div>
-                <div class="form-field">
-                    <label>Payment Mode</label>
-                    <select name="payment_method" class="form-input form-select">
-                        <option>Cash</option>
-                        <option>UPI</option>
-                        <option>Card</option>
-                        <option>Bank Transfer</option>
-                        <option>Cheque</option>
-                    </select>
-                </div>
-                <div class="form-field form-field-full">
-                    <label>Remarks</label>
-                    <input type="text" name="remarks" class="form-input" placeholder="Optional">
-                </div>
+            </div>
+            <div class="fs-class-grid" style="margin-bottom:16px">
+                <?php foreach ($allPlans as $p):
+                    $isSelected = $plan && (int) $plan['id'] === (int) $p['id'];
+                ?>
+                <label class="fs-class-pill<?php echo $isSelected ? ' is-active' : ''; ?>" style="cursor:pointer">
+                    <input type="radio" name="plan_id" value="<?php echo (int) $p['id']; ?>" <?php echo $isSelected ? 'checked' : ''; ?> required style="position:absolute;opacity:0;pointer-events:none">
+                    <div class="fs-class-pill-top">
+                        <span class="fs-class-pill-icon"><i class="fas fa-<?php echo $p['plan_type'] === 'monthly' ? 'calendar-alt' : 'coins'; ?>"></i></span>
+                        <?php if ((float) $p['discount_amount'] > 0): ?>
+                        <span class="fs-class-pill-status is-set">Save ₹<?php echo number_format((float) $p['discount_amount'], 0); ?></span>
+                        <?php elseif ((float) $p['discount_amount'] <= 0 && $p['plan_type'] === 'installment'): ?>
+                        <span class="fs-class-pill-status is-pending">No discount</span>
+                        <?php endif; ?>
+                    </div>
+                    <span class="fs-class-pill-name"><?php echo htmlspecialchars($p['name']); ?></span>
+                    <span class="fs-class-pill-amount">₹<?php echo number_format((float) $p['net_amount'], 0); ?></span>
+                    <span class="fs-class-pill-meta"><?php echo htmlspecialchars($p['installment_label'] ?: ''); ?></span>
+                </label>
+                <?php endforeach; ?>
             </div>
             <div class="settings-form-actions">
-                <button type="submit" class="btn-header-action btn-header-primary"><i class="fas fa-check"></i> Collect &amp; Print Receipt</button>
+                <button type="submit" class="btn-header-action btn-header-primary"><i class="fas fa-check"></i> <?php echo $plan ? 'Update Plan' : 'Assign Plan'; ?></button>
             </div>
         </form>
-        <script>
-        (function () {
-            var sel = document.getElementById('hfFeeMonth');
-            var amt = document.getElementById('hfAmount');
-            function sync() {
-                var opt = sel.options[sel.selectedIndex];
-                if (opt && amt) amt.value = opt.getAttribute('data-due') || '';
-            }
-            if (sel) { sel.addEventListener('change', sync); sync(); }
-        })();
-        </script>
+        <?php endif; ?>
+
+        <?php if ($plan): ?>
+            <?php if ($feeSummary['fee_status'] === 'no_structure'): ?>
+            <div class="empty-state empty-state-md">
+                <h3>No monthly hostel fee structure</h3>
+                <p>Set ₹4,500/month for this class in <a href="hostel_fees.php?class=<?php echo urlencode($student['class']); ?>">Hostel Fee Structure</a>.</p>
+            </div>
+            <?php elseif ($feeSummary['fee_status'] === 'cleared'): ?>
+            <div class="empty-state empty-state-md">
+                <h3>All cleared</h3>
+                <p>Hostel fee for this plan is fully paid.</p>
+            </div>
+            <?php elseif ($isInstallmentPlan && $collectableInstallments): ?>
+            <form method="POST" class="fc-collect-form">
+                <input type="hidden" name="collect_hostel_fee" value="1">
+                <input type="hidden" name="student_id" value="<?php echo $studentId; ?>">
+                <div class="fc-collect-form-grid">
+                    <div class="form-field">
+                        <label>Installment</label>
+                        <select name="installment_no" id="hfInstallment" class="form-input form-select" required>
+                            <?php foreach ($collectableInstallments as $st): ?>
+                            <option value="<?php echo (int) $st['installment_no']; ?>"
+                                    data-due="<?php echo htmlspecialchars(number_format($st['balance'], 2, '.', '')); ?>"
+                                    <?php echo (int) $st['installment_no'] === $defaultInstallment ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($st['label']); ?> — ₹<?php echo number_format($st['balance'], 0); ?> due
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Amount (₹)</label>
+                        <input type="number" step="0.01" min="0.01" name="amount" id="hfAmount" class="form-input" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Payment Mode</label>
+                        <select name="payment_method" class="form-input form-select">
+                            <option>Cash</option>
+                            <option>UPI</option>
+                            <option>Card</option>
+                            <option>Bank Transfer</option>
+                            <option>Cheque</option>
+                        </select>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label>Remarks</label>
+                        <input type="text" name="remarks" class="form-input" placeholder="Optional">
+                    </div>
+                </div>
+                <div class="settings-form-actions">
+                    <button type="submit" class="btn-header-action btn-header-primary"><i class="fas fa-check"></i> Collect &amp; Print Receipt</button>
+                </div>
+            </form>
+            <script>
+            (function () {
+                var sel = document.getElementById('hfInstallment');
+                var amt = document.getElementById('hfAmount');
+                function sync() {
+                    var opt = sel && sel.options[sel.selectedIndex];
+                    if (opt && amt) amt.value = opt.getAttribute('data-due') || '';
+                }
+                if (sel) { sel.addEventListener('change', sync); sync(); }
+            })();
+            </script>
+            <?php elseif (!$isInstallmentPlan && $collectableMonths): ?>
+            <form method="POST" class="fc-collect-form">
+                <input type="hidden" name="collect_hostel_fee" value="1">
+                <input type="hidden" name="student_id" value="<?php echo $studentId; ?>">
+                <div class="fc-collect-form-grid">
+                    <div class="form-field">
+                        <label>Fee Month</label>
+                        <select name="fee_month" id="hfFeeMonth" class="form-input form-select" required>
+                            <?php foreach ($collectableMonths as $ms): ?>
+                            <option value="<?php echo (int) $ms['month']; ?>"
+                                    data-due="<?php echo htmlspecialchars(number_format($ms['balance'], 2, '.', '')); ?>"
+                                    <?php echo (int) $ms['month'] === $defaultCollectMonth ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($ms['label']); ?> — ₹<?php echo number_format($ms['balance'], 0); ?> due
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Amount (₹)</label>
+                        <input type="number" step="0.01" min="0.01" name="amount" id="hfAmount" class="form-input" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Payment Mode</label>
+                        <select name="payment_method" class="form-input form-select">
+                            <option>Cash</option>
+                            <option>UPI</option>
+                            <option>Card</option>
+                            <option>Bank Transfer</option>
+                            <option>Cheque</option>
+                        </select>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label>Remarks</label>
+                        <input type="text" name="remarks" class="form-input" placeholder="Optional">
+                    </div>
+                </div>
+                <div class="settings-form-actions">
+                    <button type="submit" class="btn-header-action btn-header-primary"><i class="fas fa-check"></i> Collect &amp; Print Receipt</button>
+                </div>
+            </form>
+            <script>
+            (function () {
+                var sel = document.getElementById('hfFeeMonth');
+                var amt = document.getElementById('hfAmount');
+                function sync() {
+                    var opt = sel && sel.options[sel.selectedIndex];
+                    if (opt && amt) amt.value = opt.getAttribute('data-due') || '';
+                }
+                if (sel) { sel.addEventListener('change', sync); sync(); }
+            })();
+            </script>
+            <?php elseif ($plan && $feeSummary['fee_status'] !== 'no_structure'): ?>
+            <div class="empty-state empty-state-md">
+                <h3>Nothing due</h3>
+                <p>No pending installment or month for this student.</p>
+            </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php if (!empty($feeSummary['payments'])): ?>
@@ -343,15 +572,22 @@ $totalPaid = (float) ($feeSummary['total_paid'] ?? 0);
             <div class="table-wrapper">
                 <table>
                     <thead>
-                        <tr><th>Date</th><th>Month</th><th>Amount</th><th>Mode</th><th>Receipt</th></tr>
+                        <tr><th>Date</th><th>For</th><th>Amount</th><th>Mode</th><th>Receipt</th></tr>
                     </thead>
                     <tbody>
                         <?php foreach ($feeSummary['payments'] as $p):
                             $m = paymentRecordFeeMonth($p);
+                            $inst = (int) ($p['installment_no'] ?? 0);
+                            if ($inst < 1 && preg_match('/\[installment:(\d+)\]/', (string) ($p['remarks'] ?? ''), $mm)) {
+                                $inst = (int) $mm[1];
+                            }
+                            $forLabel = $inst > 0
+                                ? ('Installment ' . $inst)
+                                : ($m ? (getFeeMonthLabels()[$m] ?? $m) : '—');
                         ?>
                         <tr>
                             <td><?php echo date('d M Y', strtotime($p['payment_date'])); ?></td>
-                            <td><?php echo $m ? htmlspecialchars(getFeeMonthLabels()[$m] ?? $m) : '—'; ?></td>
+                            <td><?php echo htmlspecialchars((string) $forLabel); ?></td>
                             <td>₹<?php echo number_format((float) $p['amount'], 0); ?></td>
                             <td><?php echo htmlspecialchars($p['payment_method']); ?></td>
                             <td><a href="hostel_fee_receipt.php?id=<?php echo (int) $p['id']; ?>" target="_blank" class="fc-receipt-link"><i class="fas fa-print"></i> <?php echo htmlspecialchars($p['receipt_no']); ?></a></td>
@@ -364,6 +600,14 @@ $totalPaid = (float) ($feeSummary['total_paid'] ?? 0);
         <?php endif; ?>
     </div>
 </div>
+<script>
+document.querySelectorAll('.fs-class-pill input[type=radio]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+        document.querySelectorAll('.fs-class-pill').forEach(function (pill) { pill.classList.remove('is-active'); });
+        if (radio.checked) radio.closest('.fs-class-pill').classList.add('is-active');
+    });
+});
+</script>
 <?php endif; ?>
 
 <?php require_once 'includes/footer.php'; ?>

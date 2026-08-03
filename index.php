@@ -39,40 +39,7 @@ try {
 
 $notices = getActiveNotices($pdo, 6, 'All');
 
-function getHomepageToppers(PDO $pdo, int $limit = 2): array {
-    try {
-        $exam = $pdo->query("SELECT id, class_name, name FROM exams WHERE status = 'Active' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-        if (!$exam) {
-            return [];
-        }
-        $analytics = getExamClassAnalytics($pdo, (int) $exam['id']);
-        if (!$analytics || empty($analytics['results'])) {
-            return [];
-        }
-        $out = [];
-        foreach (array_slice($analytics['results'], 0, $limit) as $row) {
-            $st = $row['student'];
-            $photo = '';
-            if (!empty($st['photo'])) {
-                $rel = ltrim($st['photo'], '/');
-                if (file_exists(__DIR__ . '/admin/' . $rel)) {
-                    $photo = 'admin/' . $rel;
-                }
-            }
-            $out[] = [
-                'name' => $st['name'] ?? 'Student',
-                'class' => $exam['class_name'],
-                'percentage' => $row['percentage'],
-                'photo' => $photo,
-            ];
-        }
-        return $out;
-    } catch (PDOException $e) {
-        return [];
-    }
-}
-
-$toppers = getHomepageToppers($pdo, 2);
+$toppers = getHomepageToppers($pdo, 4);
 
 if (!isset($_SESSION['sw_captcha_a'], $_SESSION['sw_captcha_b'])) {
     $_SESSION['sw_captcha_a'] = random_int(2, 9);
@@ -338,7 +305,7 @@ $heroTitleSub = $nameParts[1] ?? '';
             <div class="sw-result-poster">
                 <div class="sw-poster-congrats">
                     <span class="sw-cursive">Congratulations</span>
-                    <span class="sw-block">TO OUR TOPPER</span>
+                    <span class="sw-block">TO OUR <?php echo htmlspecialchars(mb_strtoupper($t['title'] ?? 'Topper')); ?></span>
                 </div>
                 <div class="sw-poster-avatar-wrapper">
                     <div class="sw-poster-avatar">

@@ -1,6 +1,28 @@
 <?php
 // includes/db_connection.php — online / offline database connection flow
 
+if (function_exists('date_default_timezone_set')) {
+    @date_default_timezone_set('Asia/Kolkata');
+}
+
+/** Today's date in school timezone (IST). */
+function schoolToday(): string {
+    try {
+        return (new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d');
+    } catch (Throwable $e) {
+        return date('Y-m-d');
+    }
+}
+
+/** Current DateTimeImmutable in IST. */
+function schoolNow(): DateTimeImmutable {
+    try {
+        return new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata'));
+    } catch (Throwable $e) {
+        return new DateTimeImmutable('now');
+    }
+}
+
 function dbProfilesPath(): string {
     return __DIR__ . '/db_profiles.local.php';
 }

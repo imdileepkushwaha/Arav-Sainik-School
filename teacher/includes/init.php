@@ -1,5 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
+    @date_default_timezone_set('Asia/Kolkata');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',

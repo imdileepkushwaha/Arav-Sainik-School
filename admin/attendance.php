@@ -9,7 +9,14 @@ $session = getCurrentSession($pdo);
 $class_options = getClassOptions($pdo);
 $class = trim($_GET['class'] ?? $_POST['class'] ?? '');
 $section = trim($_GET['section'] ?? $_POST['section'] ?? 'A');
-$date = trim($_GET['date'] ?? $_POST['date'] ?? date('Y-m-d'));
+$serverToday = schoolToday();
+$rawDate = trim($_GET['date'] ?? $_POST['date'] ?? '');
+$dateExplicit = (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDate);
+$date = $dateExplicit ? $rawDate : $serverToday;
+// Live servers often have wrong OS clock — sync default "today" from browser once.
+$needsClientTodaySync = empty($_GET['client_today_synced'])
+    && ($_SERVER['REQUEST_METHOD'] !== 'POST')
+    && (!$dateExplicit || $rawDate === $serverToday);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_attendance'])) {
     $statuses = $_POST['status'] ?? [];
@@ -26,6 +33,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_attendance'])) {
 }
 
 require_once 'includes/header.php';
+if (!empty($needsClientTodaySync)): ?>
+<script>
+(function () {
+    var d = new Date();
+    var browserToday = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    var params = new URLSearchParams(window.location.search);
+    params.set('date', browserToday);
+    params.set('client_today_synced', '1');
+    <?php if ($class !== ''): ?>params.set('class', <?php echo json_encode($class); ?>);<?php endif; ?>
+    <?php if ($section !== ''): ?>params.set('section', <?php echo json_encode($section); ?>);<?php endif; ?>
+    window.location.replace('attendance.php?' + params.toString());
+})();
+</script>
+<?php
+    require_once 'includes/footer.php';
+    exit;
+endif;
 $students = ($class !== '') ? getStudentsByClassSection($pdo, $class, $section) : [];
 $existing = [];
 if ($students) {
@@ -56,7 +80,7 @@ if ($students) {
 <div class="form-section-card section-mb">
     <form method="GET" class="category-add-form">
         <div class="category-add-row erp-filter-row">
-            <div class="form-field"><label>Date</label><input type="date" name="date" class="form-input" value="<?php echo htmlspecialchars($date); ?>" required></div>
+            <div class="form-field"><label>Date</label><input type="date" name="date" id="attDate" class="form-input" value="<?php echo htmlspecialchars($date); ?>" data-server-today="<?php echo htmlspecialchars($serverToday); ?>" required></div>
             <div class="form-field"><label>Class</label>
                 <select name="class" class="form-input form-select" required>
                     <option value="">Select</option>

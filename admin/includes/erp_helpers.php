@@ -5,8 +5,16 @@ require_once __DIR__ . '/student_helpers.php';
 require_once __DIR__ . '/teacher_helpers.php';
 require_once __DIR__ . '/hostel_fee_helpers.php';
 require_once __DIR__ . '/transport_fee_helpers.php';
+require_once __DIR__ . '/topper_helpers.php';
 
 function ensureErpSchema($pdo) {
+    static $ensuring = false;
+    static $done = false;
+    if ($done || $ensuring) {
+        return;
+    }
+    $ensuring = true;
+
     ensureStudentSchema($pdo);
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS `academic_sessions` (
@@ -357,7 +365,11 @@ function ensureErpSchema($pdo) {
 
     ensureHostelFeeSchema($pdo);
     ensureTransportFeeSchema($pdo);
+    ensureTopperSchema($pdo);
     erpSeedDefaults($pdo);
+
+    $done = true;
+    $ensuring = false;
 }
 
 function erpSeedDefaults($pdo) {
@@ -486,7 +498,10 @@ function formatPaymentRemarksForDisplay($remarks): string {
     if ($remarks === '') {
         return '';
     }
-    return trim(preg_replace('/\[fee_month:\d{1,2}\]\s*/i', '', $remarks));
+    $remarks = preg_replace('/\[fee_month:\d{1,2}\]\s*/i', '', $remarks);
+    $remarks = preg_replace('/\[installment:\d{1,2}\]\s*/i', '', $remarks);
+    $remarks = preg_replace('/\[discount:[0-9.]+\]\s*/i', '', $remarks);
+    return trim($remarks);
 }
 
 function migrateFeeMonthBackfillCleanup($pdo) {

@@ -3,7 +3,7 @@ $page_title = 'My Attendance';
 $page_subtitle = 'Check in, check out, and view your attendance record';
 require_once 'includes/init.php';
 
-$today = date('Y-m-d');
+$today = schoolToday();
 $month = (int) ($_GET['month'] ?? date('n'));
 $year = (int) ($_GET['year'] ?? date('Y'));
 if ($month < 1 || $month > 12) {

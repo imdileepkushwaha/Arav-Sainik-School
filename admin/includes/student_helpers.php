@@ -4,6 +4,12 @@
 require_once __DIR__ . '/class_helpers.php';
 
 function ensureStudentSchema($pdo) {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
     $columns = [
         'email'             => "VARCHAR(100) DEFAULT NULL",
         'photo'             => "VARCHAR(255) DEFAULT NULL",

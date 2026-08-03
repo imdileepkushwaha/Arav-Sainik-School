@@ -310,7 +310,7 @@ li.open > a > i.chevron.fa-chevron-down {
 }
 
 .sidebar-menu > li.open > .submenu {
-    max-height: 420px;
+    max-height: 900px;
     opacity: 1;
     padding: 6px 0 8px;
 }
@@ -354,6 +354,9 @@ li.open > a > i.chevron.fa-chevron-down {
 .sidebar-menu > li.open > .submenu li:nth-child(8) { transition-delay: 0.34s; }
 .sidebar-menu > li.open > .submenu li:nth-child(9) { transition-delay: 0.38s; }
 .sidebar-menu > li.open > .submenu li:nth-child(10) { transition-delay: 0.42s; }
+.sidebar-menu > li.open > .submenu li:nth-child(11) { transition-delay: 0.46s; }
+.sidebar-menu > li.open > .submenu li:nth-child(12) { transition-delay: 0.5s; }
+.sidebar-menu > li.open > .submenu li:nth-child(n+13) { transition-delay: 0.54s; }
 
 .sidebar-menu > li:not(.open) > .submenu li {
     transition-delay: 0s;
