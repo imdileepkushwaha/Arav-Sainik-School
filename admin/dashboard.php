@@ -355,23 +355,35 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof ApexCharts === 'undefined') return;
     var el = document.querySelector('#revenueChart');
     if (!el) return;
+    var isMobile = window.matchMedia('(max-width: 768px)').matches;
     new ApexCharts(el, {
         series: [{ name: 'Collected', data: <?php echo json_encode($chartData); ?> }],
-        chart: { type: 'bar', height: 280, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-        plotOptions: { bar: { borderRadius: 8, columnWidth: '52%' } },
+        chart: {
+            type: 'bar',
+            height: isMobile ? 220 : 280,
+            toolbar: { show: false },
+            fontFamily: 'Inter, sans-serif',
+            parentHeightOffset: 0
+        },
+        plotOptions: { bar: { borderRadius: isMobile ? 6 : 8, columnWidth: isMobile ? '60%' : '52%' } },
         dataLabels: { enabled: false },
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, padding: { left: 4, right: 4 } },
         xaxis: {
             categories: <?php echo json_encode($monthNames); ?>,
             axisBorder: { show: false },
             axisTicks: { show: false },
-            labels: { style: { colors: '#64748b', fontSize: '12px' } }
+            labels: {
+                rotate: isMobile ? -45 : 0,
+                rotateAlways: isMobile,
+                hideOverlappingLabels: true,
+                style: { colors: '#64748b', fontSize: isMobile ? '10px' : '12px' }
+            }
         },
         colors: ['#059669'],
         yaxis: {
             labels: {
                 formatter: function (v) { return '₹' + Math.round(v).toLocaleString('en-IN'); },
-                style: { colors: '#64748b', fontSize: '12px' }
+                style: { colors: '#64748b', fontSize: isMobile ? '10px' : '12px' }
             }
         },
         tooltip: {

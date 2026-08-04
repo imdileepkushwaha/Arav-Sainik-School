@@ -720,14 +720,17 @@ button.sp-card-link { border: none; background: transparent; cursor: pointer; fo
 /* ===== Auth / Login (split panel — violet theme) ===== */
 .sp-login-page {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: #1e1b4b;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-text-size-adjust: 100%;
 }
 
 .sp-login-bg {
@@ -980,7 +983,7 @@ button.sp-card-link { border: none; background: transparent; cursor: pointer; fo
     border: none;
     background: transparent;
     padding: 14px 16px;
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-family: inherit;
     font-weight: 500;
     color: #0f172a;
@@ -1106,14 +1109,74 @@ button.sp-card-link { border: none; background: transparent; cursor: pointer; fo
 }
 
 @media (max-width: 768px) {
-    .sp-login-page { padding: 16px; align-items: flex-start; padding-top: 32px; }
-    .sp-login-wrap { grid-template-columns: 1fr; border-radius: 20px; }
-    .sp-login-brand { padding: 28px 24px 20px; }
-    .sp-login-features { grid-template-columns: 1fr; }
-    .sp-login-brand-footer { display: none; }
-    .sp-login-form-panel { padding: 28px 24px 32px; }
-    .sp-login-logo h1 { font-size: 1.35rem; }
-    .sp-login-tagline { font-size: 0.88rem; margin-bottom: 20px; }
+    .sp-login-page {
+        padding: max(12px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom));
+        align-items: flex-start;
+    }
+
+    .sp-login-orb-1,
+    .sp-login-orb-2,
+    .sp-login-orb-3 {
+        width: 180px;
+        height: 180px;
+        filter: blur(50px);
+        opacity: 0.28;
+    }
+
+    .sp-login-shell {
+        max-width: 440px;
+        margin: 0 auto;
+    }
+
+    .sp-login-wrap {
+        grid-template-columns: 1fr;
+        border-radius: 20px;
+    }
+
+    .sp-login-form-panel {
+        order: -1;
+        padding: 28px 20px 24px;
+    }
+
+    .sp-login-brand {
+        padding: 20px 20px 18px;
+    }
+
+    .sp-login-features {
+        display: none;
+    }
+
+    .sp-login-brand-footer {
+        display: none;
+    }
+
+    .sp-login-logo h1 {
+        font-size: 1.25rem;
+    }
+
+    .sp-login-tagline {
+        font-size: 0.85rem;
+        margin-bottom: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .sp-login-submit {
+        min-height: 48px;
+        width: 100%;
+    }
+
+    .sp-login-switch {
+        flex-wrap: wrap;
+    }
+
+    .sp-login-switch a {
+        flex: 1 1 calc(50% - 4px);
+        justify-content: center;
+        text-align: center;
+    }
 }
 
 @media (max-width: 900px) {
@@ -1139,4 +1202,24 @@ button.sp-card-link { border: none; background: transparent; cursor: pointer; fo
     .sp-header-breadcrumb { display: none; }
     .sp-header-actions .sp-header-icon-btn:last-of-type { display: none; }
     .sp-footer { flex-direction: column; align-items: flex-start; padding: 16px 20px; }
+
+    .sp-login-page {
+        padding: max(8px, env(safe-area-inset-top)) 10px max(16px, env(safe-area-inset-bottom));
+    }
+
+    .sp-login-wrap {
+        border-radius: 16px;
+    }
+
+    .sp-login-form-panel {
+        padding: 22px 16px 20px;
+    }
+
+    .sp-login-brand {
+        padding: 16px;
+    }
+
+    .sp-login-tagline {
+        display: none;
+    }
 }
