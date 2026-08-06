@@ -3,8 +3,21 @@ $page_title = "Hostel Management";
 require_once 'includes/init.php';
 require_once '../includes/db_connect.php';
 require_once 'includes/erp_helpers.php';
+require_once 'includes/class_helpers.php';
 
 ensureErpSchema($pdo);
+
+// Orphan cleanup: student deleted without vacating leaves Active allotment blocking hostel/room delete
+try {
+    $pdo->exec(
+        "UPDATE hostel_allotments ha
+         LEFT JOIN students s ON s.id = ha.student_id
+         SET ha.status = 'Vacated', ha.allotted_to = CURDATE()
+         WHERE ha.status = 'Active' AND s.id IS NULL"
+    );
+} catch (PDOException $e) {
+    // ignore
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -74,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error_msg'] = 'Allotment not found or already vacated.';
         }
     }
-    header('Location: hostel.php' . (isset($_GET['q']) ? '?q=' . urlencode($_GET['q']) : ''));
+    header('Location: hostel.php');
     exit;
 }
 
@@ -90,12 +103,36 @@ $allotments = $pdo->query(
      INNER JOIN hostels h ON h.id = hr.hostel_id WHERE ha.status='Active' ORDER BY h.name, hr.room_no"
 )->fetchAll(PDO::FETCH_ASSOC);
 
-$search = trim($_GET['q'] ?? '');
+$class_options = getClassOptions($pdo);
+$filterName = trim($_GET['name'] ?? '');
+$filterAdNo = trim($_GET['ad_no'] ?? '');
+$filterClass = trim($_GET['class'] ?? '');
+$filterSection = trim($_GET['section'] ?? '');
+$sectionOptions = $filterClass !== '' ? getSectionOptions($pdo, $filterClass) : ['A', 'B', 'C', 'D'];
+$searched = $filterName !== '' || $filterAdNo !== '' || $filterClass !== '' || $filterSection !== '';
 $searchResults = [];
-if ($search !== '') {
-    $like = '%' . $search . '%';
-    $stmt = $pdo->prepare("SELECT id, ad_no, name, class, section FROM students WHERE status='Active' AND (name LIKE ? OR ad_no LIKE ?) LIMIT 12");
-    $stmt->execute([$like, $like]);
+if ($searched) {
+    $sql = "SELECT id, ad_no, name, class, section FROM students WHERE status='Active'";
+    $params = [];
+    if ($filterName !== '') {
+        $sql .= " AND name LIKE ?";
+        $params[] = '%' . $filterName . '%';
+    }
+    if ($filterAdNo !== '') {
+        $sql .= " AND ad_no LIKE ?";
+        $params[] = '%' . $filterAdNo . '%';
+    }
+    if ($filterClass !== '') {
+        $sql .= " AND class = ?";
+        $params[] = $filterClass;
+    }
+    if ($filterSection !== '') {
+        $sql .= " AND section = ?";
+        $params[] = $filterSection;
+    }
+    $sql .= " ORDER BY class, section, name LIMIT 50";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     $searchResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -212,11 +249,39 @@ $availableBeds = max(0, $totalBeds - $occupiedBeds);
 <div class="form-section-card section-mb">
     <div class="section-card-header">
         <div class="section-card-icon section-icon-school"><i class="fas fa-user-plus"></i></div>
-        <div><h4>Allot Room to Student</h4><p>Search student and pick an available room</p></div>
+        <div><h4>Allot Room to Student</h4><p>Search by name, admission no, class or section</p></div>
     </div>
-    <form method="GET" class="category-add-row">
-        <div class="form-field form-field-grow"><label>Find student</label><input type="text" name="q" class="form-input" value="<?php echo htmlspecialchars($search); ?>" placeholder="Name or admission no."></div>
-        <div class="form-field category-add-btn-wrap"><label>&nbsp;</label><button type="submit" class="btn-header-action btn-header-primary category-add-btn"><i class="fas fa-search"></i> Search</button></div>
+    <form method="GET" class="category-add-row erp-filter-row-4">
+        <div class="form-field">
+            <label>Name</label>
+            <input type="text" name="name" class="form-input" value="<?php echo htmlspecialchars($filterName); ?>" placeholder="Student name">
+        </div>
+        <div class="form-field">
+            <label>Admission No</label>
+            <input type="text" name="ad_no" class="form-input" value="<?php echo htmlspecialchars($filterAdNo); ?>" placeholder="e.g. AD2026-C1-0001">
+        </div>
+        <div class="form-field">
+            <label>Class</label>
+            <select name="class" class="form-input form-select" onchange="this.form.section.value=''; this.form.submit()">
+                <option value="">All classes</option>
+                <?php foreach ($class_options as $c): ?>
+                <option value="<?php echo htmlspecialchars($c); ?>" <?php echo $filterClass === $c ? 'selected' : ''; ?>><?php echo htmlspecialchars($c); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-field">
+            <label>Section</label>
+            <select name="section" class="form-input form-select">
+                <option value="">All sections</option>
+                <?php foreach ($sectionOptions as $sec): ?>
+                <option value="<?php echo htmlspecialchars($sec); ?>" <?php echo $filterSection === $sec ? 'selected' : ''; ?>><?php echo htmlspecialchars($sec); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-field category-add-btn-wrap">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn-header-action btn-header-primary category-add-btn"><i class="fas fa-search"></i> Search</button>
+        </div>
     </form>
 </div>
 
@@ -232,7 +297,7 @@ $availableBeds = max(0, $totalBeds - $occupiedBeds);
             <strong><?php echo htmlspecialchars($sr['name']); ?></strong>
             <span><?php echo htmlspecialchars($sr['ad_no']); ?></span>
             <div class="student-search-meta">
-                <span class="student-search-class-pill"><i class="fas fa-school"></i> Class <?php echo htmlspecialchars($sr['class']); ?></span>
+                <span class="student-search-class-pill"><i class="fas fa-school"></i> Class <?php echo htmlspecialchars($sr['class']); ?><?php if (!empty($sr['section'])): ?> — <?php echo htmlspecialchars($sr['section']); ?><?php endif; ?></span>
             </div>
         </div>
     </div>
@@ -252,7 +317,7 @@ $availableBeds = max(0, $totalBeds - $occupiedBeds);
 </form>
 <?php endforeach; ?>
 </div>
-<?php elseif ($search !== ''): ?>
+<?php elseif ($searched): ?>
 <div class="tab-empty-state tab-empty-pad-sm"><p>No students found.</p></div>
 <?php endif; ?>
 
