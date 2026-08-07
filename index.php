@@ -173,22 +173,11 @@ $heroTitleSub = $nameParts[1] ?? '';
                 <li class="sw-nav-login-mobile">
                     <span class="sw-nav-login-label">Login</span>
                     <a href="admin/index.php" class="sw-nav-link"><i class="fa-solid fa-user-shield"></i> Admin</a>
-                    <a href="teacher/index.php" class="sw-nav-link"><i class="fa-solid fa-chalkboard-user"></i> Teacher</a>
-                    <a href="portal/index.php" class="sw-nav-link"><i class="fa-solid fa-user-graduate"></i> Student</a>
                 </li>
             </ul>
 
             <div class="sw-nav-right">
-                <div class="sw-login-menu">
-                    <button type="button" class="sw-btn sw-login-trigger" id="swLoginTrigger" aria-expanded="false" aria-haspopup="true">
-                        <i class="fa-solid fa-right-to-bracket"></i> Login <i class="fa-solid fa-chevron-down sw-login-chev"></i>
-                    </button>
-                    <div class="sw-login-dropdown" id="swLoginDropdown" role="menu">
-                        <a href="admin/index.php" role="menuitem"><i class="fa-solid fa-user-shield"></i><div><strong>Admin Login</strong><span>School office dashboard</span></div></a>
-                        <a href="teacher/index.php" role="menuitem"><i class="fa-solid fa-chalkboard-user"></i><div><strong>Teacher Login</strong><span>Faculty portal</span></div></a>
-                        <a href="portal/index.php" role="menuitem"><i class="fa-solid fa-user-graduate"></i><div><strong>Student Login</strong><span>Student portal</span></div></a>
-                    </div>
-                </div>
+                <a href="admin/index.php" class="sw-btn sw-login-trigger"><i class="fa-solid fa-right-to-bracket"></i> Admin Login</a>
                 <a href="#contact" class="sw-btn sw-cta-btn">Enroll Now <i class="fa-solid fa-arrow-right"></i></a>
                 <button type="button" class="sw-hamburger" id="swHamburger" aria-label="Menu"><span></span><span></span><span></span></button>
             </div>
@@ -397,8 +386,6 @@ $heroTitleSub = $nameParts[1] ?? '';
                 <?php endif; ?>
             </ul>
             <div class="sw-portals-row">
-                <a href="portal/index.php"><i class="fa-solid fa-user-graduate"></i> Student Portal</a>
-                <a href="teacher/index.php"><i class="fa-solid fa-chalkboard-user"></i> Teacher Portal</a>
                 <a href="admin/index.php"><i class="fa-solid fa-user-shield"></i> Admin Login</a>
             </div>
         </div>
@@ -540,24 +527,6 @@ $heroTitleSub = $nameParts[1] ?? '';
                 links.classList.remove('open');
                 burger.classList.remove('open');
             });
-        });
-    }
-
-    var loginTrigger = document.getElementById('swLoginTrigger');
-    var loginDropdown = document.getElementById('swLoginDropdown');
-    if (loginTrigger && loginDropdown) {
-        loginTrigger.addEventListener('click', function (e) {
-            e.stopPropagation();
-            var open = loginDropdown.classList.toggle('open');
-            loginTrigger.classList.toggle('open', open);
-            loginTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-        document.addEventListener('click', function (e) {
-            if (!loginDropdown.contains(e.target) && !loginTrigger.contains(e.target)) {
-                loginDropdown.classList.remove('open');
-                loginTrigger.classList.remove('open');
-                loginTrigger.setAttribute('aria-expanded', 'false');
-            }
         });
     }
 

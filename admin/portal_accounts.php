@@ -69,7 +69,7 @@ if ($searched) {
         </div>
     </div>
     <div class="content-top-actions">
-        <a href="homework.php" class="btn-header-action btn-header-outline"><i class="fas fa-book-open"></i> Homework</a>
+        <a href="notices.php" class="btn-header-action btn-header-outline"><i class="fas fa-bullhorn"></i> Notices</a>
         <a href="../portal/" target="_blank" class="btn-header-action btn-header-primary"><i class="fas fa-external-link-alt"></i> Open Portal</a>
     </div>
 </div>
@@ -164,7 +164,7 @@ if ($searched) {
     <div class="notify-info-icon"><i class="fas fa-info-circle"></i></div>
     <div class="notify-info-text">
         <strong>Student portal URL:</strong> <code>/portal/</code> — Login with admission number + password.<br>
-        Post homework from <a href="homework.php" class="teal-link">Homework module</a>.
+        Publish announcements from <a href="notices.php" class="teal-link">Notice Board</a>.
     </div>
 </div>
 <?php require_once 'includes/footer.php'; ?>

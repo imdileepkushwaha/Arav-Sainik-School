@@ -240,8 +240,8 @@ $todayLabel = date('l, d M Y');
                     <i class="fas fa-inbox"></i><span>Enquiries</span>
                     <?php if ($stats['newEnquiries']): ?><em><?php echo $stats['newEnquiries']; ?> new</em><?php endif; ?>
                 </a>
-                <a href="homework.php" class="db-quick-tile"><i class="fas fa-book"></i><span>Homework</span></a>
-                <a href="certificates.php" class="db-quick-tile"><i class="fas fa-certificate"></i><span>Certificates</span></a>
+                <a href="notices.php" class="db-quick-tile"><i class="fas fa-bullhorn"></i><span>Notices</span></a>
+                <a href="hostel.php" class="db-quick-tile"><i class="fas fa-bed"></i><span>Hostel</span></a>
                 <a href="settings.php" class="db-quick-tile"><i class="fas fa-cog"></i><span>Settings</span></a>
             </div>
         </div>

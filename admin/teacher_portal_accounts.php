@@ -54,7 +54,7 @@ $pendingPreview = array_slice($pendingTeachers, 0, 8);
         </div>
     </div>
     <div class="content-top-actions">
-        <a href="homework.php" class="btn-header-action btn-header-outline"><i class="fas fa-book-open"></i> Homework</a>
+        <a href="notices.php" class="btn-header-action btn-header-outline"><i class="fas fa-bullhorn"></i> Notices</a>
         <a href="teachers.php" class="btn-header-action btn-header-outline"><i class="fas fa-chalkboard-teacher"></i> All Teachers</a>
         <a href="../teacher/" target="_blank" class="btn-header-action btn-header-primary"><i class="fas fa-external-link-alt"></i> Open Portal</a>
     </div>
@@ -245,7 +245,7 @@ $pendingPreview = array_slice($pendingTeachers, 0, 8);
     <div class="notify-info-icon"><i class="fas fa-lightbulb"></i></div>
     <div class="notify-info-text">
         <strong>Tip:</strong> Active teachers can also self-login at <code>/teacher/</code> with Employee ID + default password — portal auto-enables on first login.<br>
-        After login, teachers can view timetable, mark attendance, post homework from <a href="homework.php" class="teal-link">Homework module</a>, and update their profile.
+        After login, teachers can view timetable, mark attendance, and update their profile.
     </div>
 </div>
 

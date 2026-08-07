@@ -70,7 +70,7 @@ if (!empty($form_data['class_assigned']) && isset($pdo)) {
         </div>
     </div>
 
-    <div class="form-section-card">
+    <div class="form-section-card" style="display: none;">
         <div class="section-card-header">
             <div class="section-card-icon section-icon-parent"><i class="fas fa-school"></i></div>
             <div><h4>Class Assignment</h4><p>Homeroom / class teacher (optional)</p></div>

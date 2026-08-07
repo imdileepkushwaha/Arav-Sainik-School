@@ -8,7 +8,7 @@ require_once 'includes/db_settings_helpers.php';
 ensureSettingsSchema($pdo);
 
 $activeTab = $_GET['tab'] ?? 'school';
-$allowedTabs = ['school', 'signatures', 'email', 'sms', 'whatsapp', 'password'];
+$allowedTabs = ['school', 'signatures', 'email', 'password'];
 if (!in_array($activeTab, $allowedTabs, true)) {
     $activeTab = 'school';
 }
@@ -340,11 +340,11 @@ if ($activeTab === 'signatures' && !empty($_GET['edit'])) {
             <span class="settings-vtab-icon"><i class="fas fa-envelope"></i></span>
             <span class="settings-vtab-text"><strong>Email SMTP</strong><small>Outgoing mail server</small></span>
         </a>
-        <a href="settings.php?tab=sms" class="settings-vtab <?php echo $activeTab === 'sms' ? 'active' : ''; ?>">
+        <a href="settings.php?tab=sms" class="settings-vtab <?php echo $activeTab === 'sms' ? 'active' : ''; ?>" style="display: none;">
             <span class="settings-vtab-icon"><i class="fas fa-sms"></i></span>
             <span class="settings-vtab-text"><strong>SMS / MSG</strong><small>MSG91 &amp; SMS gateway</small></span>
         </a>
-        <a href="settings.php?tab=whatsapp" class="settings-vtab <?php echo $activeTab === 'whatsapp' ? 'active' : ''; ?>">
+        <a href="settings.php?tab=whatsapp" class="settings-vtab <?php echo $activeTab === 'whatsapp' ? 'active' : ''; ?>" style="display: none;">
             <span class="settings-vtab-icon"><i class="fab fa-whatsapp"></i></span>
             <span class="settings-vtab-text"><strong>WhatsApp</strong><small>Business API setup</small></span>
         </a>

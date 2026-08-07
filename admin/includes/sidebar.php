@@ -5,7 +5,7 @@ $admin_name = htmlspecialchars(ucfirst($_SESSION['admin_username']));
 $avatar_url = 'https://ui-avatars.com/api/?name=' . urlencode($_SESSION['admin_username']) . '&background=059669&color=fff&bold=true';
 
 $student_pages = ['students.php', 'student_add.php', 'student_edit.php', 'student_view.php', 'student_suspend.php', 'student_categories.php', 'student_import.php', 'student_promote.php', 'student_promote_advanced.php', 'student_id_card.php', 'student_documents.php', 'classes.php', 'portal_accounts.php', 'admission_enquiries.php', 'toppers.php'];
-$academic_pages = ['academic_sessions.php', 'subjects.php', 'class_timetable.php', 'notices.php', 'homework.php'];
+$academic_pages = ['academic_sessions.php', 'subjects.php', 'class_timetable.php', 'notices.php'];
 $attendance_pages = ['attendance.php', 'attendance_report.php'];
 $fee_pages = ['fees.php', 'fee_collect.php', 'fee_receipt.php', 'fee_reports.php'];
 $hostel_pages = ['hostel.php', 'hostel_fees.php', 'hostel_fee_collect.php', 'hostel_fee_receipt.php'];
@@ -46,7 +46,6 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                 <a href="dashboard.php">
                     <span class="menu-icon-wrap"><i class="fas fa-home menu-icon"></i></span>
                     <span class="menu-text">Dashboard</span>
-                    <i class="fas fa-chevron-right chevron"></i>
                 </a>
             </li>
             <li class="has-submenu <?php echo (in_array($current_page, $student_pages)) ? 'active open' : ''; ?>">
@@ -66,7 +65,7 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                     <li class="<?php echo ($current_page == 'student_categories.php') ? 'active' : ''; ?>"><a href="student_categories.php">Categories</a></li>
                     <li class="<?php echo ($current_page == 'toppers.php') ? 'active' : ''; ?>"><a href="toppers.php">Topper Manage</a></li>
                     <li class="<?php echo ($current_page == 'student_suspend.php') ? 'active' : ''; ?>"><a href="student_suspend.php">Suspend</a></li>
-                    <li class="<?php echo ($current_page == 'portal_accounts.php') ? 'active' : ''; ?>"><a href="portal_accounts.php">Student Portal</a></li>
+                    <li class="<?php echo ($current_page == 'portal_accounts.php') ? 'active' : ''; ?>" style="display: none;"><a href="portal_accounts.php">Student Portal</a></li>
                     <li class="<?php echo ($current_page == 'admission_enquiries.php') ? 'active' : ''; ?>"><a href="admission_enquiries.php">Admission Enquiries</a></li>
                 </ul>
             </li>
@@ -81,10 +80,9 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                     <li class="<?php echo ($current_page == 'subjects.php') ? 'active' : ''; ?>"><a href="subjects.php">Subjects</a></li>
                     <li class="<?php echo ($current_page == 'class_timetable.php') ? 'active' : ''; ?>"><a href="class_timetable.php">Class Timetable</a></li>
                     <li class="<?php echo ($current_page == 'notices.php') ? 'active' : ''; ?>"><a href="notices.php">Notice Board</a></li>
-                    <li class="<?php echo ($current_page == 'homework.php') ? 'active' : ''; ?>"><a href="homework.php">Homework</a></li>
                 </ul>
             </li>
-            <li class="has-submenu <?php echo (in_array($current_page, $attendance_pages)) ? 'active open' : ''; ?>">
+            <li class="has-submenu <?php echo (in_array($current_page, $attendance_pages)) ? 'active open' : ''; ?>" style="display: none;">
                 <a href="#" class="submenu-toggle" onclick="return toggleSubmenu(this, event)">
                     <span class="menu-icon-wrap"><i class="far fa-calendar-check menu-icon"></i></span>
                     <span class="menu-text">Attendance</span>
@@ -107,7 +105,7 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                     <li class="<?php echo ($current_page == 'fee_reports.php') ? 'active' : ''; ?>"><a href="fee_reports.php">Fee Reports</a></li>
                 </ul>
             </li>
-            <li class="has-submenu <?php echo (in_array($current_page, $exam_pages)) ? 'active open' : ''; ?>">
+            <li class="has-submenu <?php echo (in_array($current_page, $exam_pages)) ? 'active open' : ''; ?>" style="display: none;">
                 <a href="#" class="submenu-toggle" onclick="return toggleSubmenu(this, event)">
                     <span class="menu-icon-wrap"><i class="far fa-edit menu-icon"></i></span>
                     <span class="menu-text">Examinations</span>
@@ -119,11 +117,10 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                     <li class="<?php echo ($current_page == 'exam_analytics.php') ? 'active' : ''; ?>"><a href="exam_analytics.php">Result Analytics</a></li>
                 </ul>
             </li>
-            <li class="<?php echo ($current_page == 'certificates.php' || $current_page == 'certificate_print.php') ? 'active' : ''; ?>">
+            <li class="<?php echo ($current_page == 'certificates.php' || $current_page == 'certificate_print.php') ? 'active' : ''; ?>" style="display: none;">
                 <a href="certificates.php">
                     <span class="menu-icon-wrap"><i class="fas fa-certificate menu-icon"></i></span>
                     <span class="menu-text">Certificates</span>
-                    <i class="fas fa-chevron-right chevron"></i>
                 </a>
             </li>
             <li class="has-submenu <?php echo (in_array($current_page, $hostel_pages)) ? 'active open' : ''; ?>">
@@ -138,7 +135,7 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                     <li class="<?php echo ($current_page == 'hostel_fee_collect.php' || $current_page == 'hostel_fee_receipt.php') ? 'active' : ''; ?>"><a href="hostel_fee_collect.php">Collect Hostel Fee</a></li>
                 </ul>
             </li>
-            <li class="has-submenu <?php echo (in_array($current_page, $transport_pages)) ? 'active open' : ''; ?>">
+            <li class="has-submenu <?php echo (in_array($current_page, $transport_pages)) ? 'active open' : ''; ?>" style="display: none;">
                 <a href="#" class="submenu-toggle" onclick="return toggleSubmenu(this, event)">
                     <span class="menu-icon-wrap"><i class="fas fa-bus menu-icon"></i></span>
                     <span class="menu-text">Transport</span>
@@ -150,11 +147,10 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                     <li class="<?php echo ($current_page == 'transport_fee_collect.php' || $current_page == 'transport_fee_receipt.php') ? 'active' : ''; ?>"><a href="transport_fee_collect.php">Collect Transport Fee</a></li>
                 </ul>
             </li>
-            <li class="<?php echo ($current_page == 'notifications.php') ? 'active' : ''; ?>">
+            <li class="<?php echo ($current_page == 'notifications.php') ? 'active' : ''; ?>" style="display: none;">
                 <a href="notifications.php">
                     <span class="menu-icon-wrap"><i class="fas fa-bell menu-icon"></i></span>
                     <span class="menu-text">SMS / WhatsApp</span>
-                    <i class="fas fa-chevron-right chevron"></i>
                 </a>
             </li>
             <li class="has-submenu <?php echo (in_array($current_page, $teacher_pages)) ? 'active open' : ''; ?>">
@@ -166,19 +162,18 @@ $teacher_pages = ['teachers.php', 'teacher_add.php', 'teacher_edit.php', 'teache
                 <ul class="submenu submenu-tree">
                     <li class="<?php echo ($current_page == 'teacher_add.php') ? 'active' : ''; ?>"><a href="teacher_add.php">Add New Teacher</a></li>
                     <li class="<?php echo ($current_page == 'teachers.php') ? 'active' : ''; ?>"><a href="teachers.php">Teacher List</a></li>
-                    <li class="<?php echo ($current_page == 'teacher_edit.php') ? 'active' : ''; ?>"><a href="teacher_edit.php">Edit Teacher</a></li>
+                    <li class="<?php echo ($current_page == 'teacher_edit.php') ? 'active' : ''; ?>" style="display: none;"><a href="teacher_edit.php">Edit Teacher</a></li>
                     <li class="<?php echo ($current_page == 'teacher_view.php') ? 'active' : ''; ?>"><a href="teacher_view.php">Teacher Details</a></li>
                     <li class="<?php echo ($current_page == 'teacher_timetable.php') ? 'active' : ''; ?>"><a href="teacher_timetable.php">Teacher Timetable</a></li>
-                    <li class="<?php echo ($current_page == 'teacher_portal_accounts.php') ? 'active' : ''; ?>"><a href="teacher_portal_accounts.php">Teacher Portal</a></li>
-                    <li class="<?php echo ($current_page == 'teacher_attendance.php') ? 'active' : ''; ?>"><a href="teacher_attendance.php">Teacher Attendance</a></li>
-                    <li class="<?php echo ($current_page == 'leave_requests.php') ? 'active' : ''; ?>"><a href="leave_requests.php">Leave Requests</a></li>
+                    <li class="<?php echo ($current_page == 'teacher_portal_accounts.php') ? 'active' : ''; ?>" style="display: none;"><a href="teacher_portal_accounts.php">Teacher Portal</a></li>
+                    <li class="<?php echo ($current_page == 'teacher_attendance.php') ? 'active' : ''; ?>" style="display: none;"><a href="teacher_attendance.php">Teacher Attendance</a></li>
+                    <li class="<?php echo ($current_page == 'leave_requests.php') ? 'active' : ''; ?>" style="display: none;"><a href="leave_requests.php">Leave Requests</a></li>
                 </ul>
             </li>
             <li class="<?php echo ($current_page == 'settings.php') ? 'active' : ''; ?>">
                 <a href="settings.php">
                     <span class="menu-icon-wrap"><i class="fas fa-cog menu-icon"></i></span>
                     <span class="menu-text">Settings</span>
-                    <i class="fas fa-chevron-right chevron"></i>
                 </a>
             </li>
         </ul>

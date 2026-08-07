@@ -65,7 +65,6 @@ $pages = [
     ['title' => 'Subjects', 'url' => 'subjects.php', 'icon' => 'fa-book', 'meta' => 'Academic', 'kw' => 'subjects subject'],
     ['title' => 'Class Timetable', 'url' => 'class_timetable.php', 'icon' => 'fa-table', 'meta' => 'Academic', 'kw' => 'timetable schedule periods'],
     ['title' => 'Notice Board', 'url' => 'notices.php', 'icon' => 'fa-bullhorn', 'meta' => 'Academic', 'kw' => 'notice notices announcement circular'],
-    ['title' => 'Homework', 'url' => 'homework.php', 'icon' => 'fa-book-open', 'meta' => 'Academic', 'kw' => 'homework assignment'],
     ['title' => 'Mark Attendance', 'url' => 'attendance.php', 'icon' => 'fa-calendar-check', 'meta' => 'Attendance', 'kw' => 'attendance mark attendance present absent'],
     ['title' => 'Attendance Report', 'url' => 'attendance_report.php', 'icon' => 'fa-chart-bar', 'meta' => 'Attendance', 'kw' => 'attendance report monthly'],
     ['title' => 'Fee Structure', 'url' => 'fees.php', 'icon' => 'fa-file-invoice-dollar', 'meta' => 'Fees', 'kw' => 'fees fee structure amount'],
