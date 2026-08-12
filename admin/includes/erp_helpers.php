@@ -501,6 +501,7 @@ function formatPaymentRemarksForDisplay($remarks): string {
     $remarks = preg_replace('/\[fee_month:\d{1,2}\]\s*/i', '', $remarks);
     $remarks = preg_replace('/\[installment:\d{1,2}\]\s*/i', '', $remarks);
     $remarks = preg_replace('/\[discount:[0-9.]+\]\s*/i', '', $remarks);
+    $remarks = preg_replace('/\[admission_fee\]\s*/i', '', $remarks);
     return trim($remarks);
 }
 

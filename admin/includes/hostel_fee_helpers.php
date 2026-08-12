@@ -44,6 +44,12 @@ function ensureHostelFeeSchema(PDO $pdo): void {
         if (!in_array('plan_id', $cols, true)) {
             $pdo->exec("ALTER TABLE `hostel_fee_payments` ADD COLUMN `plan_id` int(11) DEFAULT NULL AFTER `installment_no`");
         }
+        if (!in_array('discount_amount', $cols, true)) {
+            $pdo->exec("ALTER TABLE `hostel_fee_payments` ADD COLUMN `discount_amount` decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `amount`");
+        }
+        if (!in_array('fee_kind', $cols, true)) {
+            $pdo->exec("ALTER TABLE `hostel_fee_payments` ADD COLUMN `fee_kind` varchar(20) NOT NULL DEFAULT 'regular' AFTER `plan_id`");
+        }
     } catch (PDOException $e) {
         // ignore
     }
@@ -77,6 +83,122 @@ function ensureHostelFeeSchema(PDO $pdo): void {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     seedDefaultHostelFeePlans($pdo);
+    seedHostelAdmissionFeeSetting($pdo);
+    ensureHostelPlanZeroDiscounts($pdo);
+}
+
+function ensureHostelPlanZeroDiscounts(PDO $pdo): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    try {
+        if (!function_exists('getSetting') || !function_exists('setSetting')) {
+            if (file_exists(__DIR__ . '/settings_helpers.php')) {
+                require_once __DIR__ . '/settings_helpers.php';
+            }
+        }
+        if (function_exists('getSetting') && getSetting($pdo, 'hostel_plan_zero_disc_v1', '') === '1') {
+            return;
+        }
+        // One-time: Monthly + 3 Installments default discount = 0
+        $rows = $pdo->query(
+            "SELECT id, plan_code, plan_type, gross_amount, amounts_json
+             FROM hostel_fee_plans
+             WHERE plan_code IN ('monthly', 'inst_3')"
+        )->fetchAll(PDO::FETCH_ASSOC);
+        $upd = $pdo->prepare(
+            "UPDATE hostel_fee_plans SET discount_amount = 0, net_amount = ? WHERE id = ?"
+        );
+        foreach ($rows as $row) {
+            $net = (float) ($row['gross_amount'] ?? 0);
+            if (($row['plan_code'] ?? '') === 'inst_3') {
+                $amounts = json_decode((string) ($row['amounts_json'] ?? '[]'), true);
+                if (is_array($amounts) && array_sum(array_map('floatval', $amounts)) > 0) {
+                    $net = array_sum(array_map('floatval', $amounts));
+                }
+            }
+            $upd->execute([$net, (int) $row['id']]);
+        }
+        if (function_exists('setSetting')) {
+            if (function_exists('ensureSettingsSchema')) {
+                ensureSettingsSchema($pdo);
+            }
+            setSetting($pdo, 'hostel_plan_zero_disc_v1', '1');
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+function seedHostelAdmissionFeeSetting(PDO $pdo): void {
+    try {
+        if (!function_exists('getSetting') || !function_exists('setSetting')) {
+            if (file_exists(__DIR__ . '/settings_helpers.php')) {
+                require_once __DIR__ . '/settings_helpers.php';
+            }
+        }
+        if (!function_exists('getSetting') || !function_exists('setSetting')) {
+            return;
+        }
+        if (function_exists('ensureSettingsSchema')) {
+            ensureSettingsSchema($pdo);
+        }
+        $current = getSetting($pdo, 'hostel_admission_fee', '');
+        if ($current === '' || $current === null) {
+            setSetting($pdo, 'hostel_admission_fee', '1000');
+        }
+    } catch (Throwable $e) {
+        // Settings table may not be ready yet
+    }
+}
+
+function getHostelAdmissionFeeAmount(PDO $pdo): float {
+    if (!function_exists('getSetting')) {
+        if (file_exists(__DIR__ . '/settings_helpers.php')) {
+            require_once __DIR__ . '/settings_helpers.php';
+        }
+    }
+    if (!function_exists('getSetting')) {
+        return 1000.0;
+    }
+    $val = (float) getSetting($pdo, 'hostel_admission_fee', '1000');
+    return $val >= 0 ? $val : 1000.0;
+}
+
+function isHostelAdmissionPayment(array $row): bool {
+    if (($row['fee_kind'] ?? '') === 'admission') {
+        return true;
+    }
+    return strpos((string) ($row['remarks'] ?? ''), '[admission_fee]') !== false;
+}
+
+function getStudentHostelAdmissionPaid(PDO $pdo, int $studentId): float {
+    ensureHostelFeeSchema($pdo);
+    $stmt = $pdo->prepare(
+        "SELECT amount, discount_amount, fee_kind, remarks FROM hostel_fee_payments WHERE student_id = ?"
+    );
+    $stmt->execute([$studentId]);
+    $paid = 0.0;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (isHostelAdmissionPayment($row)) {
+            $paid += hostelPaymentCredit($row);
+        }
+    }
+    return $paid;
+}
+
+function getStudentHostelAdmissionFeeStatus(PDO $pdo, int $studentId, bool $hasHostel = true): array {
+    $due = $hasHostel ? getHostelAdmissionFeeAmount($pdo) : 0.0;
+    $paid = getStudentHostelAdmissionPaid($pdo, $studentId);
+    return [
+        'label' => 'Admission Fee',
+        'due' => $due,
+        'paid' => $paid,
+        'balance' => feeMonthPaymentBalance($due, $paid),
+        'status' => $due <= 0 ? 'paid' : feeMonthPaymentStatus($due, $paid),
+    ];
 }
 
 function getDefaultHostelFeePlanDefinitions(): array {
@@ -305,14 +427,33 @@ function assignStudentHostelPlan(PDO $pdo, int $studentId, int $planId, $session
     $stmt->execute([$studentId, $planId, $sessionId]);
 }
 
+function hostelPaymentDiscountAmount(array $row): float {
+    $discount = (float) ($row['discount_amount'] ?? 0);
+    if ($discount > 0) {
+        return $discount;
+    }
+    if (preg_match('/\[discount:([0-9.]+)\]/i', (string) ($row['remarks'] ?? ''), $m)) {
+        return (float) $m[1];
+    }
+    return 0.0;
+}
+
+/** Cash paid + discount waiver credited toward hostel due. */
+function hostelPaymentCredit(array $row): float {
+    return (float) ($row['amount'] ?? 0) + hostelPaymentDiscountAmount($row);
+}
+
 function getStudentHostelInstallmentPaymentsMap(PDO $pdo, int $studentId): array {
     ensureHostelFeeSchema($pdo);
     $stmt = $pdo->prepare(
-        "SELECT installment_no, amount, remarks FROM hostel_fee_payments WHERE student_id = ?"
+        "SELECT installment_no, amount, discount_amount, fee_kind, remarks FROM hostel_fee_payments WHERE student_id = ?"
     );
     $stmt->execute([$studentId]);
     $map = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (isHostelAdmissionPayment($row)) {
+            continue;
+        }
         $no = (int) ($row['installment_no'] ?? 0);
         if ($no < 1) {
             if (preg_match('/\[installment:(\d+)\]/', (string) ($row['remarks'] ?? ''), $m)) {
@@ -320,7 +461,7 @@ function getStudentHostelInstallmentPaymentsMap(PDO $pdo, int $studentId): array
             }
         }
         if ($no >= 1) {
-            $map[$no] = ($map[$no] ?? 0.0) + (float) ($row['amount'] ?? 0);
+            $map[$no] = ($map[$no] ?? 0.0) + hostelPaymentCredit($row);
         }
     }
     return $map;
@@ -412,17 +553,20 @@ function getHostelClassFeeSummaries(PDO $pdo, $sessionId = null): array {
 function getStudentHostelMonthlyPaymentsMap(PDO $pdo, int $studentId): array {
     ensureHostelFeeSchema($pdo);
     $stmt = $pdo->prepare(
-        "SELECT fee_month, amount, remarks FROM hostel_fee_payments WHERE student_id = ?"
+        "SELECT fee_month, amount, discount_amount, fee_kind, remarks FROM hostel_fee_payments WHERE student_id = ?"
     );
     $stmt->execute([$studentId]);
     $map = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (isHostelAdmissionPayment($row)) {
+            continue;
+        }
         $month = (int) ($row['fee_month'] ?? 0);
         if ($month < 1 || $month > 12) {
             $month = feeMonthFromRemarks($row['remarks'] ?? '');
         }
         if ($month >= 1 && $month <= 12) {
-            $map[$month] = ($map[$month] ?? 0.0) + (float) ($row['amount'] ?? 0);
+            $map[$month] = ($map[$month] ?? 0.0) + hostelPaymentCredit($row);
         }
     }
     return $map;
@@ -458,16 +602,17 @@ function getStudentHostelFeeSummary(PDO $pdo, int $studentId): ?array {
     }
 
     $installmentStatuses = [];
+    $planDue = 0.0;
+    $planPaid = 0.0;
     if ($plan && $planType === 'installment') {
         $paidByInst = getStudentHostelInstallmentPaymentsMap($pdo, $studentId);
         $amounts = $plan['amounts'];
-        $totalDue = (float) $plan['net_amount'];
-        $totalPaid = 0.0;
+        $planDue = (float) $plan['net_amount'];
         foreach ($amounts as $i => $dueAmt) {
             $no = $i + 1;
             $due = (float) $dueAmt;
             $paid = (float) ($paidByInst[$no] ?? 0);
-            $totalPaid += $paid;
+            $planPaid += $paid;
             $installmentStatuses[] = [
                 'installment_no' => $no,
                 'label' => 'Installment ' . $no,
@@ -477,19 +622,19 @@ function getStudentHostelFeeSummary(PDO $pdo, int $studentId): ?array {
                 'status' => feeMonthPaymentStatus($due, $paid),
             ];
         }
-        // Cap total paid display to plan net for balance clarity
-        $balance = max(0, $totalDue - $totalPaid);
     } else {
         $paidByMonth = getStudentHostelMonthlyPaymentsMap($pdo, $studentId);
-        $totalDue = $structureAnnual;
-        $totalPaid = array_sum($paidByMonth);
-        $balance = max(0, $totalDue - $totalPaid);
+        $planDue = $structureAnnual;
+        $planPaid = array_sum($paidByMonth);
         if ($plan && $planType === 'monthly' && (float) $plan['net_amount'] > 0 && $structureAnnual <= 0) {
-            // Fallback if monthly structure empty but plan net set
-            $totalDue = (float) $plan['net_amount'];
-            $balance = max(0, $totalDue - $totalPaid);
+            $planDue = (float) $plan['net_amount'];
         }
     }
+
+    $admission = getStudentHostelAdmissionFeeStatus($pdo, $studentId, $hasHostel);
+    $totalDue = $planDue + (float) $admission['due'];
+    $totalPaid = $planPaid + (float) $admission['paid'];
+    $balance = max(0, $totalDue - $totalPaid);
 
     $payStmt = $pdo->prepare(
         "SELECT * FROM hostel_fee_payments WHERE student_id = ? ORDER BY payment_date DESC, id DESC"
@@ -497,6 +642,7 @@ function getStudentHostelFeeSummary(PDO $pdo, int $studentId): ?array {
     $payStmt->execute([$studentId]);
     $payments = $payStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $planBalance = max(0, $planDue - $planPaid);
     if (!$hasHostel) {
         $feeStatus = 'not_allotted';
     } elseif (!$plan && $structureAnnual <= 0) {
@@ -520,6 +666,10 @@ function getStudentHostelFeeSummary(PDO $pdo, int $studentId): ?array {
         'total_due' => $totalDue,
         'total_paid' => $totalPaid,
         'balance' => $balance,
+        'plan_due' => $planDue,
+        'plan_paid' => $planPaid,
+        'plan_balance' => $planBalance,
+        'admission_fee' => $admission,
         'gross_amount' => $plan ? (float) $plan['gross_amount'] : $structureAnnual,
         'discount_amount' => $plan ? (float) $plan['discount_amount'] : 0.0,
         'fee_status' => $feeStatus,
@@ -579,6 +729,39 @@ function searchHostelStudents(PDO $pdo, string $type, string $q, int $limit = 40
     $sql .= ' ORDER BY s.name ASC LIMIT ' . (int) $limit;
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$param]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/** Combined hostel student search by name + class + section (any optional). */
+function findHostelStudents(PDO $pdo, string $name = '', string $class = '', string $section = '', int $limit = 80): array {
+    $name = trim($name);
+    $class = trim($class);
+    $section = trim($section);
+    if ($name === '' && $class === '' && $section === '') {
+        return [];
+    }
+    $sql = "SELECT s.* FROM students s
+            INNER JOIN hostel_allotments ha ON ha.student_id = s.id AND ha.status = 'Active'
+            WHERE s.status = 'Active'";
+    $params = [];
+    if ($name !== '') {
+        $sql .= ' AND (s.name LIKE ? OR s.ad_no LIKE ? OR s.roll LIKE ?)';
+        $like = '%' . $name . '%';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+    if ($class !== '') {
+        $sql .= ' AND s.class = ?';
+        $params[] = $class;
+    }
+    if ($section !== '') {
+        $sql .= ' AND s.section = ?';
+        $params[] = $section;
+    }
+    $sql .= ' ORDER BY s.class ASC, s.section ASC, s.roll ASC, s.name ASC LIMIT ' . (int) $limit;
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 

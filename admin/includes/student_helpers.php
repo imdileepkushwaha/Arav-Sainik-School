@@ -42,6 +42,7 @@ function ensureStudentSchema($pdo) {
         'room_no'           => "VARCHAR(20) DEFAULT NULL",
         'room_type'         => "VARCHAR(50) DEFAULT NULL",
         'description'       => "TEXT DEFAULT NULL",
+        'aadhar'            => "VARCHAR(255) DEFAULT NULL",
         'created_at'        => "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
     ];
 
@@ -98,26 +99,41 @@ function admissionClassCode($className) {
     }
     if (preg_match('/(?:^|[^\d])(?:class\s*)?(\d{1,2})(?:\D|$)/i', $className, $m)
         || preg_match('/^(\d{1,2})$/', $className, $m)) {
-        return 'C' . (int) $m[1];
+        return (string) (int) $m[1];
     }
     $slug = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $className));
     return $slug !== '' ? substr($slug, 0, 6) : 'GEN';
 }
 
-function generateAdmissionNo($pdo, $className = '') {
-    $code = admissionClassCode($className);
+/** Serial code = class number + section letter, e.g. Class 1 + A → 1A */
+function serialClassSectionCode($className, $section = 'A') {
+    $classCode = admissionClassCode($className);
+    if ($classCode === '') {
+        return '';
+    }
+    $section = strtoupper(trim((string) $section));
+    if ($section === '') {
+        $section = 'A';
+    }
+    $section = preg_replace('/[^A-Z0-9]/', '', $section) ?: 'A';
+    return $classCode . $section;
+}
+
+function generateAdmissionNo($pdo, $className = '', $section = 'A') {
+    $code = serialClassSectionCode($className, $section);
     if ($code === '') {
         return '';
     }
-    $prefix = 'AD' . date('Y') . '-' . $code . '-';
+    $year = date('Y');
+    $prefix = 'SN' . $year . '-' . $code . '-';
+    $seq = 1;
     try {
-        $stmt = $pdo->prepare("SELECT ad_no FROM students WHERE ad_no LIKE ? ORDER BY ad_no DESC LIMIT 1");
+        $stmt = $pdo->prepare("SELECT ad_no FROM students WHERE ad_no LIKE ?");
         $stmt->execute([$prefix . '%']);
-        $last = $stmt->fetchColumn();
-        if ($last && preg_match('/-(\d{1,6})$/', (string) $last, $m)) {
-            $seq = (int) $m[1] + 1;
-        } else {
-            $seq = 1;
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $ad) {
+            if (preg_match('/-(\d{1,6})$/', (string) $ad, $m)) {
+                $seq = max($seq, (int) $m[1] + 1);
+            }
         }
     } catch (PDOException $e) {
         $seq = 1;
@@ -200,7 +216,8 @@ function handleRollApiRequest($pdo) {
     if ($action === 'next_ad_no') {
         header('Content-Type: application/json');
         $class = trim($_GET['class'] ?? '');
-        echo json_encode(['ad_no' => $class !== '' ? generateAdmissionNo($pdo, $class) : '']);
+        $section = trim($_GET['section'] ?? 'A') ?: 'A';
+        echo json_encode(['ad_no' => $class !== '' ? generateAdmissionNo($pdo, $class, $section) : '']);
         exit;
     }
     if ($action === 'check_roll') {
@@ -253,6 +270,40 @@ function uploadStudentPhoto($file, $ad_no) {
     $path = $dir . $filename;
     if (move_uploaded_file($file['tmp_name'], $path)) {
         return 'uploads/students/' . $filename;
+    }
+    return false;
+}
+
+function getStudentAadharUrl($student) {
+    if (!empty($student['aadhar']) && file_exists(__DIR__ . '/../' . $student['aadhar'])) {
+        return $student['aadhar'];
+    }
+    return '';
+}
+
+function uploadStudentAadhar($file, $ad_no) {
+    if (empty($file['name']) || $file['error'] !== UPLOAD_ERR_OK) {
+        return null;
+    }
+    $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'application/pdf'];
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    if (!in_array($mime, $allowed, true)) {
+        return false;
+    }
+    if ($file['size'] > 2 * 1024 * 1024) {
+        return false;
+    }
+    $dir = __DIR__ . '/../uploads/students/aadhar/';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: ($mime === 'application/pdf' ? 'pdf' : 'jpg');
+    $filename = preg_replace('/[^a-zA-Z0-9_-]/', '', $ad_no) . '_aadhar_' . time() . '.' . strtolower($ext);
+    $path = $dir . $filename;
+    if (move_uploaded_file($file['tmp_name'], $path)) {
+        return 'uploads/students/aadhar/' . $filename;
     }
     return false;
 }
@@ -395,16 +446,13 @@ function getIndianStates() {
     ];
 }
 
-function applyStudentAddressFromPost(array &$form_data, array $post) {
-    $same = isset($post['same_as_current_address']);
-
-    if ($same) {
-        $form_data['permanent_address_line'] = $form_data['current_address_line'];
-        $form_data['permanent_city'] = $form_data['current_city'];
-        $form_data['permanent_state'] = $form_data['current_state'];
-        $form_data['permanent_country'] = $form_data['current_country'];
-        $form_data['permanent_pincode'] = $form_data['current_pincode'];
-    }
+function applyStudentAddressFromPost(array &$form_data, array $post = []) {
+    // Single address form — keep permanent columns in sync for legacy reads
+    $form_data['permanent_address_line'] = $form_data['current_address_line'];
+    $form_data['permanent_city'] = $form_data['current_city'];
+    $form_data['permanent_state'] = $form_data['current_state'];
+    $form_data['permanent_country'] = $form_data['current_country'];
+    $form_data['permanent_pincode'] = $form_data['current_pincode'];
 
     $form_data['current_address'] = formatStudentAddressParts([
         'line' => $form_data['current_address_line'],
@@ -413,13 +461,7 @@ function applyStudentAddressFromPost(array &$form_data, array $post) {
         'country' => $form_data['current_country'],
         'pincode' => $form_data['current_pincode'],
     ]);
-    $form_data['permanent_address'] = formatStudentAddressParts([
-        'line' => $form_data['permanent_address_line'],
-        'city' => $form_data['permanent_city'],
-        'state' => $form_data['permanent_state'],
-        'country' => $form_data['permanent_country'],
-        'pincode' => $form_data['permanent_pincode'],
-    ]);
+    $form_data['permanent_address'] = $form_data['current_address'];
 }
 
 function hydrateStudentAddressFields(array &$data, array $student = []) {
@@ -471,10 +513,10 @@ function studentFromRow($student, $guardians = []) {
 }
 
 function guardiansFromForm($post) {
+    $contact = trim($post['mobile'] ?? '');
     return [
-        ['name' => $post['father_name'] ?? '', 'relation' => 'Father', 'phone' => $post['father_phone'] ?? '', 'email' => $post['father_email'] ?? ''],
-        ['name' => $post['mother_name'] ?? '', 'relation' => 'Mother', 'phone' => $post['mother_phone'] ?? '', 'email' => $post['mother_email'] ?? ''],
-        ['name' => $post['guardian_name'] ?? '', 'relation' => 'Guardian', 'phone' => $post['guardian_phone'] ?? '', 'email' => $post['guardian_email'] ?? ''],
+        ['name' => $post['father_name'] ?? '', 'relation' => 'Father', 'phone' => $contact, 'email' => ''],
+        ['name' => $post['mother_name'] ?? '', 'relation' => 'Mother', 'phone' => $contact, 'email' => ''],
     ];
 }
 

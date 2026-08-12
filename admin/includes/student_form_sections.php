@@ -1,11 +1,13 @@
 <?php
 // admin/includes/student_form_sections.php
-// Expects: $form_data, $class_options, $category_options, $mode ('add'|'edit'), $generated_ad_no (add), $ad_no (edit), $photo_url (edit optional), $pdo
+// Expects: $form_data, $class_options, $category_options, $mode ('add'|'edit'), $generated_ad_no (add), $ad_no (edit), $photo_url (edit optional), $aadhar_url (edit optional), $pdo
 $is_edit = ($mode ?? 'add') === 'edit';
 $section_options = [];
 if (!empty($form_data['class']) && isset($pdo)) {
     $section_options = getSectionOptions($pdo, $form_data['class']);
 }
+$aadhar_url = $aadhar_url ?? '';
+$aadhar_is_pdf = $aadhar_url !== '' && preg_match('/\.pdf$/i', $aadhar_url);
 ?>
     <div class="form-section-card">
         <div class="section-card-header">
@@ -17,7 +19,7 @@ if (!empty($form_data['class']) && isset($pdo)) {
         </div>
         <div class="form-grid">
             <div class="form-field">
-                <label><i class="fas fa-id-card"></i> Admission No</label>
+                <label><i class="fas fa-hashtag"></i> Serial No.</label>
                 <?php if ($is_edit): ?>
                 <div class="form-input-readonly">
                     <span class="ad-no-display"><?php echo htmlspecialchars($ad_no); ?></span>
@@ -25,7 +27,7 @@ if (!empty($form_data['class']) && isset($pdo)) {
                 <?php else: ?>
                 <div class="form-input-readonly">
                     <span class="ad-no-display" id="adNoDisplay"><?php echo htmlspecialchars($generated_ad_no); ?></span>
-                    <span class="auto-gen-tag"><i class="fas fa-magic"></i> Class-wise auto</span>
+                    <span class="auto-gen-tag"><i class="fas fa-magic"></i> Auto generated</span>
                 </div>
                 <?php endif; ?>
             </div>
@@ -53,24 +55,6 @@ if (!empty($form_data['class']) && isset($pdo)) {
                     <?php endforeach; ?>
                     <?php endif; ?>
                 </select>
-            </div>
-            <div class="form-field" id="rollFieldWrap">
-                <label><i class="fas fa-hashtag"></i> Roll Number <span class="required">*</span></label>
-                <?php if ($is_edit): ?>
-                <input type="text" id="roll" name="roll" class="form-input" value="<?php echo htmlspecialchars($form_data['roll']); ?>" required autocomplete="off">
-                <span class="roll-field-msg" id="rollMsg" hidden></span>
-                <?php else: ?>
-                <div class="form-input-readonly" id="rollAutoBox">
-                    <span class="ad-no-display <?php echo $generated_roll === '' ? 'roll-pending' : ''; ?>" id="rollDisplay"><?php echo $generated_roll !== '' ? htmlspecialchars($generated_roll) : 'Select class & section'; ?></span>
-                    <span class="auto-gen-tag"><i class="fas fa-magic"></i> Auto generated</span>
-                </div>
-                <input type="hidden" name="roll" id="roll" value="<?php echo htmlspecialchars($form_data['roll'] ?: $generated_roll); ?>">
-                <div id="rollManualWrap" class="roll-manual-wrap" hidden>
-                    <input type="text" id="rollManual" class="form-input" placeholder="Enter custom roll number" autocomplete="off">
-                </div>
-                <button type="button" class="roll-override-link" id="rollOverrideBtn"><i class="fas fa-pen"></i> Use custom roll</button>
-                <span class="roll-field-msg" id="rollMsg" hidden></span>
-                <?php endif; ?>
             </div>
             <div class="form-field">
                 <label for="dob"><i class="fas fa-cake-candles"></i> Date of Birth <span class="required">*</span></label>
@@ -104,44 +88,21 @@ if (!empty($form_data['class']) && isset($pdo)) {
 
     <div class="form-section-card">
         <div class="section-card-header">
-            <div class="section-card-icon section-icon-address"><i class="fas fa-phone"></i></div>
-            <div><h4>Contact Information</h4><p>Phone and email</p></div>
-        </div>
-        <div class="form-grid form-grid-2">
-            <div class="form-field">
-                <label for="mobile"><i class="fas fa-mobile-alt"></i> Mobile <span class="required">*</span></label>
-                <input type="tel" id="mobile" name="mobile" class="form-input" value="<?php echo htmlspecialchars($form_data['mobile']); ?>" required>
-            </div>
-            <div class="form-field">
-                <label for="email"><i class="fas fa-envelope"></i> Email</label>
-                <input type="email" id="email" name="email" class="form-input" value="<?php echo htmlspecialchars($form_data['email']); ?>">
-            </div>
-        </div>
-    </div>
-
-    <div class="form-section-card">
-        <div class="section-card-header">
             <div class="section-card-icon section-icon-parent"><i class="fas fa-users"></i></div>
-            <div><h4>Parent & Guardian</h4><p>Family contact details</p></div>
+            <div><h4>Family Details</h4><p>Parents and contact number</p></div>
         </div>
         <div class="form-grid form-grid-3">
-            <div class="form-field-group">
-                <h5><i class="fas fa-male"></i> Father</h5>
-                <div class="form-field"><label>Name</label><input type="text" name="father_name" class="form-input" value="<?php echo htmlspecialchars($form_data['father_name']); ?>"></div>
-                <div class="form-field"><label>Phone</label><input type="tel" name="father_phone" class="form-input" value="<?php echo htmlspecialchars($form_data['father_phone']); ?>"></div>
-                <div class="form-field"><label>Email</label><input type="email" name="father_email" class="form-input" value="<?php echo htmlspecialchars($form_data['father_email']); ?>"></div>
+            <div class="form-field">
+                <label for="father_name"><i class="fas fa-male"></i> Father Name</label>
+                <input type="text" id="father_name" name="father_name" class="form-input" value="<?php echo htmlspecialchars($form_data['father_name']); ?>">
             </div>
-            <div class="form-field-group">
-                <h5><i class="fas fa-female"></i> Mother</h5>
-                <div class="form-field"><label>Name</label><input type="text" name="mother_name" class="form-input" value="<?php echo htmlspecialchars($form_data['mother_name']); ?>"></div>
-                <div class="form-field"><label>Phone</label><input type="tel" name="mother_phone" class="form-input" value="<?php echo htmlspecialchars($form_data['mother_phone']); ?>"></div>
-                <div class="form-field"><label>Email</label><input type="email" name="mother_email" class="form-input" value="<?php echo htmlspecialchars($form_data['mother_email']); ?>"></div>
+            <div class="form-field">
+                <label for="mother_name"><i class="fas fa-female"></i> Mother Name</label>
+                <input type="text" id="mother_name" name="mother_name" class="form-input" value="<?php echo htmlspecialchars($form_data['mother_name']); ?>">
             </div>
-            <div class="form-field-group">
-                <h5><i class="fas fa-user-shield"></i> Guardian</h5>
-                <div class="form-field"><label>Name</label><input type="text" name="guardian_name" class="form-input" value="<?php echo htmlspecialchars($form_data['guardian_name']); ?>"></div>
-                <div class="form-field"><label>Phone</label><input type="tel" name="guardian_phone" class="form-input" value="<?php echo htmlspecialchars($form_data['guardian_phone']); ?>"></div>
-                <div class="form-field"><label>Email</label><input type="email" name="guardian_email" class="form-input" value="<?php echo htmlspecialchars($form_data['guardian_email']); ?>"></div>
+            <div class="form-field">
+                <label for="mobile"><i class="fas fa-phone"></i> Contact Number <span class="required">*</span></label>
+                <input type="tel" id="mobile" name="mobile" class="form-input" value="<?php echo htmlspecialchars($form_data['mobile']); ?>" required>
             </div>
         </div>
     </div>
@@ -149,89 +110,37 @@ if (!empty($form_data['class']) && isset($pdo)) {
     <div class="form-section-card">
         <div class="section-card-header">
             <div class="section-card-icon section-icon-address"><i class="fas fa-map-marker-alt"></i></div>
-            <div><h4>Address</h4><p>Current and permanent location</p></div>
+            <div><h4>Address</h4><p>Student residential address</p></div>
         </div>
-        <?php
-        $indianStates = getIndianStates();
-        $sameAsCurrent = trim(($form_data['permanent_address_line'] ?? '') . ($form_data['permanent_city'] ?? '') . ($form_data['permanent_state'] ?? '') . ($form_data['permanent_country'] ?? '') . ($form_data['permanent_pincode'] ?? '')) !== ''
-            && ($form_data['permanent_address_line'] ?? '') === ($form_data['current_address_line'] ?? '')
-            && ($form_data['permanent_city'] ?? '') === ($form_data['current_city'] ?? '')
-            && ($form_data['permanent_state'] ?? '') === ($form_data['current_state'] ?? '')
-            && ($form_data['permanent_country'] ?? '') === ($form_data['current_country'] ?? '')
-            && ($form_data['permanent_pincode'] ?? '') === ($form_data['current_pincode'] ?? '');
-        ?>
-        <label class="address-same-check">
-            <input type="checkbox" name="same_as_current_address" id="sameAsCurrentAddress" value="1" <?php echo $sameAsCurrent ? 'checked' : ''; ?>>
-            <span>Permanent address is same as current address</span>
-        </label>
-
-        <div class="address-split">
-            <div class="address-block">
-                <h5 class="address-block-title"><i class="fas fa-home"></i> Current Address</h5>
-                <div class="form-grid form-grid-2">
-                    <div class="form-field form-field-full">
-                        <label for="current_address_line">Address Line</label>
-                        <input type="text" id="current_address_line" name="current_address_line" class="form-input addr-current" value="<?php echo htmlspecialchars($form_data['current_address_line'] ?? ''); ?>" placeholder="House / Street / Landmark">
-                    </div>
-                    <div class="form-field">
-                        <label for="current_city">City</label>
-                        <input type="text" id="current_city" name="current_city" class="form-input addr-current" value="<?php echo htmlspecialchars($form_data['current_city'] ?? ''); ?>" placeholder="City">
-                    </div>
-                    <div class="form-field">
-                        <label for="current_state">State</label>
-                        <select id="current_state" name="current_state" class="form-input form-select addr-current">
-                            <option value="">Select state</option>
-                            <?php foreach ($indianStates as $st): ?>
-                            <option value="<?php echo htmlspecialchars($st); ?>" <?php echo ($form_data['current_state'] ?? '') === $st ? 'selected' : ''; ?>><?php echo htmlspecialchars($st); ?></option>
-                            <?php endforeach; ?>
-                            <?php if (($form_data['current_state'] ?? '') !== '' && !in_array($form_data['current_state'], $indianStates, true)): ?>
-                            <option value="<?php echo htmlspecialchars($form_data['current_state']); ?>" selected><?php echo htmlspecialchars($form_data['current_state']); ?></option>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-                    <div class="form-field">
-                        <label for="current_country">Country</label>
-                        <input type="text" id="current_country" name="current_country" class="form-input addr-current" value="<?php echo htmlspecialchars($form_data['current_country'] ?? 'India'); ?>" placeholder="Country">
-                    </div>
-                    <div class="form-field">
-                        <label for="current_pincode">PIN Code</label>
-                        <input type="text" id="current_pincode" name="current_pincode" class="form-input addr-current" value="<?php echo htmlspecialchars($form_data['current_pincode'] ?? ''); ?>" placeholder="e.g. 110001" maxlength="10">
-                    </div>
-                </div>
+        <?php $indianStates = getIndianStates(); ?>
+        <div class="form-grid form-grid-2">
+            <div class="form-field form-field-full">
+                <label for="current_address_line">Address Line</label>
+                <input type="text" id="current_address_line" name="current_address_line" class="form-input" value="<?php echo htmlspecialchars($form_data['current_address_line'] ?? ''); ?>" placeholder="House / Street / Landmark">
             </div>
-
-            <div class="address-block" id="permanentAddressBlock">
-                <h5 class="address-block-title"><i class="fas fa-map-pin"></i> Permanent Address</h5>
-                <div class="form-grid form-grid-2">
-                    <div class="form-field form-field-full">
-                        <label for="permanent_address_line">Address Line</label>
-                        <input type="text" id="permanent_address_line" name="permanent_address_line" class="form-input addr-permanent" value="<?php echo htmlspecialchars($form_data['permanent_address_line'] ?? ''); ?>" placeholder="House / Street / Landmark">
-                    </div>
-                    <div class="form-field">
-                        <label for="permanent_city">City</label>
-                        <input type="text" id="permanent_city" name="permanent_city" class="form-input addr-permanent" value="<?php echo htmlspecialchars($form_data['permanent_city'] ?? ''); ?>" placeholder="City">
-                    </div>
-                    <div class="form-field">
-                        <label for="permanent_state">State</label>
-                        <select id="permanent_state" name="permanent_state" class="form-input form-select addr-permanent">
-                            <option value="">Select state</option>
-                            <?php foreach ($indianStates as $st): ?>
-                            <option value="<?php echo htmlspecialchars($st); ?>" <?php echo ($form_data['permanent_state'] ?? '') === $st ? 'selected' : ''; ?>><?php echo htmlspecialchars($st); ?></option>
-                            <?php endforeach; ?>
-                            <?php if (($form_data['permanent_state'] ?? '') !== '' && !in_array($form_data['permanent_state'], $indianStates, true)): ?>
-                            <option value="<?php echo htmlspecialchars($form_data['permanent_state']); ?>" selected><?php echo htmlspecialchars($form_data['permanent_state']); ?></option>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-                    <div class="form-field">
-                        <label for="permanent_country">Country</label>
-                        <input type="text" id="permanent_country" name="permanent_country" class="form-input addr-permanent" value="<?php echo htmlspecialchars($form_data['permanent_country'] ?? 'India'); ?>" placeholder="Country">
-                    </div>
-                    <div class="form-field">
-                        <label for="permanent_pincode">PIN Code</label>
-                        <input type="text" id="permanent_pincode" name="permanent_pincode" class="form-input addr-permanent" value="<?php echo htmlspecialchars($form_data['permanent_pincode'] ?? ''); ?>" placeholder="e.g. 110001" maxlength="10">
-                    </div>
-                </div>
+            <div class="form-field">
+                <label for="current_city">City</label>
+                <input type="text" id="current_city" name="current_city" class="form-input" value="<?php echo htmlspecialchars($form_data['current_city'] ?? ''); ?>" placeholder="City">
+            </div>
+            <div class="form-field">
+                <label for="current_state">State</label>
+                <select id="current_state" name="current_state" class="form-input form-select">
+                    <option value="">Select state</option>
+                    <?php foreach ($indianStates as $st): ?>
+                    <option value="<?php echo htmlspecialchars($st); ?>" <?php echo ($form_data['current_state'] ?? '') === $st ? 'selected' : ''; ?>><?php echo htmlspecialchars($st); ?></option>
+                    <?php endforeach; ?>
+                    <?php if (($form_data['current_state'] ?? '') !== '' && !in_array($form_data['current_state'], $indianStates, true)): ?>
+                    <option value="<?php echo htmlspecialchars($form_data['current_state']); ?>" selected><?php echo htmlspecialchars($form_data['current_state']); ?></option>
+                    <?php endif; ?>
+                </select>
+            </div>
+            <div class="form-field">
+                <label for="current_country">Country</label>
+                <input type="text" id="current_country" name="current_country" class="form-input" value="<?php echo htmlspecialchars($form_data['current_country'] ?? 'India'); ?>" placeholder="Country">
+            </div>
+            <div class="form-field">
+                <label for="current_pincode">PIN Code</label>
+                <input type="text" id="current_pincode" name="current_pincode" class="form-input" value="<?php echo htmlspecialchars($form_data['current_pincode'] ?? ''); ?>" placeholder="e.g. 110001" maxlength="10">
             </div>
         </div>
     </div>
@@ -309,14 +218,6 @@ if (!empty($form_data['class']) && isset($pdo)) {
 
     <div class="form-section-card">
         <div class="section-card-header">
-            <div class="section-card-icon section-icon-desc"><i class="fas fa-align-left"></i></div>
-            <div><h4>Description</h4><p>Remarks about the student</p></div>
-        </div>
-        <textarea name="description" class="form-input form-textarea" rows="4" placeholder="Optional remarks..."><?php echo htmlspecialchars($form_data['description']); ?></textarea>
-    </div>
-
-    <div class="form-section-card">
-        <div class="section-card-header">
             <div class="section-card-icon section-icon-docs"><i class="fas fa-camera"></i></div>
             <div><h4>Student Photo</h4><p>JPG, PNG — Max 2MB</p></div>
         </div>
@@ -336,69 +237,57 @@ if (!empty($form_data['class']) && isset($pdo)) {
             </div>
         </div>
     </div>
+
+    <div class="form-section-card">
+        <div class="section-card-header">
+            <div class="section-card-icon section-icon-docs"><i class="fas fa-id-card"></i></div>
+            <div><h4>Aadhar Card</h4><p>JPG, PNG or PDF — Max 2MB</p></div>
+        </div>
+        <div class="photo-upload-area aadhar-upload-area">
+            <div class="photo-upload-preview aadhar-upload-preview" id="aadharPreview">
+                <?php if ($aadhar_url !== '' && !$aadhar_is_pdf): ?>
+                <img src="<?php echo htmlspecialchars($aadhar_url); ?>" alt="Aadhar">
+                <?php elseif ($aadhar_url !== '' && $aadhar_is_pdf): ?>
+                <i class="fas fa-file-pdf"></i><span>PDF uploaded</span>
+                <?php else: ?>
+                <i class="fas fa-id-card"></i><span>No Aadhar</span>
+                <?php endif; ?>
+            </div>
+            <div class="photo-upload-content">
+                <p>Upload Aadhar card</p>
+                <span class="photo-upload-hint">Preview appears after you choose a file</span>
+                <label class="photo-upload-btn"><i class="fas fa-upload"></i> Choose File
+                    <input type="file" name="aadhar" id="aadhar" accept="image/*,.pdf,application/pdf" hidden>
+                </label>
+            </div>
+        </div>
+    </div>
 <script>
 (function () {
     var isEdit = <?php echo $is_edit ? 'true' : 'false'; ?>;
     var classSelect = document.getElementById('class');
     var sectionSelect = document.getElementById('section');
-    var rollMsg = document.getElementById('rollMsg');
     if (!classSelect) return;
 
-    var rollInput = document.getElementById('roll');
-    var rollDisplay = document.getElementById('rollDisplay');
-    var rollAutoBox = document.getElementById('rollAutoBox');
-    var rollManualWrap = document.getElementById('rollManualWrap');
-    var rollManual = document.getElementById('rollManual');
-    var rollOverrideBtn = document.getElementById('rollOverrideBtn');
-    var useCustomRoll = false;
-
-    var excludeId = <?php echo isset($exclude_student_id) ? (int) $exclude_student_id : 0; ?>;
     var apiBase = '<?php echo $is_edit ? 'student_edit.php?id=' . (int) ($exclude_student_id ?? 0) : 'student_add.php'; ?>';
 
     function apiUrl(query) {
         return apiBase + (apiBase.indexOf('?') >= 0 ? '&' : '?') + query;
     }
 
-    function setRollMsg(text, type) {
-        if (!rollMsg) return;
-        if (!text) {
-            rollMsg.hidden = true;
-            rollMsg.textContent = '';
-            rollMsg.className = 'roll-field-msg';
-            return;
-        }
-        rollMsg.hidden = false;
-        rollMsg.textContent = text;
-        rollMsg.className = 'roll-field-msg roll-field-msg--' + type;
-    }
-
-    function getRollValue() {
-        if (isEdit) return rollInput ? rollInput.value.trim() : '';
-        if (useCustomRoll && rollManual) return rollManual.value.trim();
-        return rollInput ? rollInput.value.trim() : '';
-    }
-
-    function setAutoRoll(value) {
-        if (!rollInput) return;
-        rollInput.value = value;
-        if (rollDisplay) {
-            rollDisplay.textContent = value || 'Select class & section';
-            rollDisplay.classList.toggle('roll-pending', !value);
-        }
-    }
-
     function fetchNextAdNo() {
         var adDisplay = document.getElementById('adNoDisplay');
         if (!adDisplay || isEdit) return;
         var cls = classSelect.value;
+        var sec = sectionSelect ? sectionSelect.value : 'A';
         if (!cls) {
-            adDisplay.textContent = 'Select class first';
+            adDisplay.textContent = 'Select class & section';
             return;
         }
-        fetch(apiUrl('action=next_ad_no&class=' + encodeURIComponent(cls)))
+        fetch(apiUrl('action=next_ad_no&class=' + encodeURIComponent(cls) + '&section=' + encodeURIComponent(sec || 'A')))
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                adDisplay.textContent = data.ad_no || 'Select class first';
+                adDisplay.textContent = data.ad_no || 'Select class & section';
             });
     }
 
@@ -407,8 +296,6 @@ if (!empty($form_data['class']) && isset($pdo)) {
         if (!sectionSelect) return;
         if (!cls) {
             sectionSelect.innerHTML = '<option value="">Select class first</option>';
-            setAutoRoll('');
-            setRollMsg('', '');
             fetchNextAdNo();
             return;
         }
@@ -435,92 +322,16 @@ if (!empty($form_data['class']) && isset($pdo)) {
                         sectionSelect.selectedIndex = 0;
                     }
                 }
-                fetchNextRoll();
+                fetchNextAdNo();
             });
-    }
-
-    function fetchNextRoll() {
-        var cls = classSelect.value;
-        var sec = sectionSelect ? sectionSelect.value : 'A';
-        if (!cls) {
-            setAutoRoll('');
-            setRollMsg('', '');
-            return;
-        }
-        if (isEdit && useCustomRoll) return;
-        if (!isEdit && useCustomRoll) return;
-
-        fetch(apiUrl('action=next_roll&class=' + encodeURIComponent(cls) + '&section=' + encodeURIComponent(sec)))
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (data.roll) {
-                    if (isEdit && rollInput) rollInput.value = data.roll;
-                    else setAutoRoll(data.roll);
-                }
-                checkRollDuplicate();
-            });
-    }
-
-    function checkRollDuplicate() {
-        var roll = getRollValue();
-        var cls = classSelect.value;
-        var sec = sectionSelect ? sectionSelect.value : 'A';
-        if (!roll || !cls) {
-            setRollMsg('', '');
-            return;
-        }
-        var url = apiUrl('action=check_roll&roll=' + encodeURIComponent(roll)
-            + '&class=' + encodeURIComponent(cls) + '&section=' + encodeURIComponent(sec));
-        if (excludeId) url += '&exclude_id=' + excludeId;
-        fetch(url)
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (data.taken) {
-                    setRollMsg('Roll ' + roll + ' is already used in this class & section.', 'error');
-                } else if (roll) {
-                    setRollMsg('Roll ' + roll + ' is available.', 'ok');
-                }
-            });
-    }
-
-    if (!isEdit && rollOverrideBtn) {
-        rollOverrideBtn.addEventListener('click', function () {
-            useCustomRoll = !useCustomRoll;
-            if (useCustomRoll) {
-                rollAutoBox.hidden = true;
-                rollManualWrap.hidden = false;
-                rollOverrideBtn.innerHTML = '<i class="fas fa-magic"></i> Use auto roll';
-                if (rollManual) {
-                    rollManual.value = rollInput.value;
-                    rollManual.focus();
-                }
-            } else {
-                rollAutoBox.hidden = false;
-                rollManualWrap.hidden = true;
-                rollOverrideBtn.innerHTML = '<i class="fas fa-pen"></i> Use custom roll';
-                if (rollManual) rollInput.value = rollManual.value.trim() || rollInput.value;
-                fetchNextRoll();
-            }
-        });
-    }
-
-    if (isEdit && rollInput) {
-        rollInput.addEventListener('input', checkRollDuplicate);
-        rollInput.addEventListener('blur', checkRollDuplicate);
-    }
-
-    if (!isEdit && rollManual) {
-        rollManual.addEventListener('input', function () {
-            rollInput.value = rollManual.value.trim();
-            checkRollDuplicate();
-        });
     }
 
     classSelect.addEventListener('change', function () {
         loadSections(false);
-        fetchNextAdNo();
     });
-    if (sectionSelect) sectionSelect.addEventListener('change', fetchNextRoll);
+    if (sectionSelect) {
+        sectionSelect.addEventListener('change', fetchNextAdNo);
+    }
 
     if (classSelect.value) loadSections(true);
 })();
@@ -542,59 +353,5 @@ if (!empty($form_data['class']) && isset($pdo)) {
         }
     }
     radios.forEach(function (r) { r.addEventListener('change', syncPrevSchool); });
-})();
-</script>
-<script>
-(function () {
-    var sameCb = document.getElementById('sameAsCurrentAddress');
-    if (!sameCb) return;
-    var map = [
-        ['current_address_line', 'permanent_address_line'],
-        ['current_city', 'permanent_city'],
-        ['current_state', 'permanent_state'],
-        ['current_country', 'permanent_country'],
-        ['current_pincode', 'permanent_pincode']
-    ];
-    var permanentInputs = document.querySelectorAll('.addr-permanent');
-    var currentInputs = document.querySelectorAll('.addr-current');
-
-    function syncSameAddress() {
-        var same = sameCb.checked;
-        map.forEach(function (pair) {
-            var from = document.getElementById(pair[0]);
-            var to = document.getElementById(pair[1]);
-            if (!from || !to) return;
-            if (same) to.value = from.value;
-            if (to.tagName === 'SELECT') {
-                to.disabled = same;
-                to.classList.toggle('is-readonly', same);
-            } else {
-                to.readOnly = same;
-                to.classList.toggle('is-readonly', same);
-            }
-        });
-    }
-
-    sameCb.addEventListener('change', syncSameAddress);
-    currentInputs.forEach(function (el) {
-        el.addEventListener('input', function () {
-            if (sameCb.checked) syncSameAddress();
-        });
-        el.addEventListener('change', function () {
-            if (sameCb.checked) syncSameAddress();
-        });
-    });
-    // Before submit, re-enable permanent select so value posts if somehow not copied server-side
-    var form = sameCb.closest('form');
-    if (form) {
-        form.addEventListener('submit', function () {
-            var permState = document.getElementById('permanent_state');
-            if (permState && sameCb.checked) {
-                permState.disabled = false;
-                permState.value = document.getElementById('current_state').value;
-            }
-        });
-    }
-    syncSameAddress();
 })();
 </script>

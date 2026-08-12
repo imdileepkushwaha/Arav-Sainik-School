@@ -38,9 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['csv_file']['name'])
                     $errors[] = "$name: " . implode(' ', $rowErrors);
                     continue;
                 }
-                $ad_no = generateAdmissionNo($pdo, $className);
+                $ad_no = generateAdmissionNo($pdo, $className, $section);
                 if ($ad_no === '') {
-                    $errors[] = "$name: Could not generate admission number for class \"$className\".";
+                    $errors[] = "$name: Could not generate serial number for class \"$className\" section \"$section\".";
                     continue;
                 }
                 try {

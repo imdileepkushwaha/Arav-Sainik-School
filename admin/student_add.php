@@ -12,16 +12,9 @@ $class_options = getClassOptions($pdo);
 $category_options = getCategoryOptions($pdo);
 $form_data = getDefaultStudentFormData();
 $mode = 'add';
-$generated_roll = '';
 $generated_ad_no = $form_data['class'] !== ''
-    ? generateAdmissionNo($pdo, $form_data['class'])
-    : 'Select class first';
-
-if ($form_data['class'] !== '') {
-    $generated_roll = $form_data['roll'] !== ''
-        ? $form_data['roll']
-        : getNextRollNumber($pdo, $form_data['class'], $form_data['section']);
-}
+    ? generateAdmissionNo($pdo, $form_data['class'], $form_data['section'] ?: 'A')
+    : 'Select class & section';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $keys = array_keys(getDefaultStudentFormData());
@@ -33,19 +26,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($form_data['name'] === '') $errors[] = 'Student name is required.';
     if ($form_data['class'] === '') $errors[] = 'Class is required.';
     if ($form_data['dob'] === '') $errors[] = 'Date of birth is required.';
-    if ($form_data['mobile'] === '') $errors[] = 'Mobile number is required.';
+    if ($form_data['mobile'] === '') $errors[] = 'Contact number is required.';
 
-    if ($form_data['roll'] === '' && $form_data['class'] !== '') {
-        $form_data['roll'] = getNextRollNumber($pdo, $form_data['class'], $form_data['section']);
-    }
+    // Roll kept in DB for legacy modules — auto-assign, not shown on form
+    $form_data['roll'] = $form_data['class'] !== ''
+        ? getNextRollNumber($pdo, $form_data['class'], $form_data['section'])
+        : '';
+    $form_data['email'] = '';
+    $form_data['description'] = '';
+
     $errors = array_merge($errors, validateStudentRoll($pdo, $form_data['roll'], $form_data['class'], $form_data['section']));
     $errors = array_merge($errors, validateClassAndSection($pdo, $form_data['class'], $form_data['section']));
 
     if (empty($errors)) {
         try {
-            $ad_no = generateAdmissionNo($pdo, $form_data['class']);
+            $ad_no = generateAdmissionNo($pdo, $form_data['class'], $form_data['section'] ?: 'A');
             if ($ad_no === '') {
-                throw new RuntimeException('Could not generate admission number for the selected class.');
+                throw new RuntimeException('Could not generate serial number for the selected class & section.');
             }
 
             $photo = null;
@@ -58,15 +55,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            $aadhar = null;
+            if (!empty($_FILES['aadhar']['name'])) {
+                $aadhar = uploadStudentAadhar($_FILES['aadhar'], $ad_no);
+                if ($aadhar === false) {
+                    $_SESSION['error_msg'] = 'Invalid Aadhar file. Use JPG/PNG/PDF under 2MB.';
+                    header('Location: student_add.php');
+                    exit;
+                }
+            }
+
             $stmt = $pdo->prepare("INSERT INTO students (
                 ad_no, name, roll, class, section, dob, gender, mobile, email, category, status, avatar_id,
-                photo, current_address, permanent_address,
+                photo, aadhar, current_address, permanent_address,
                 current_address_line, current_city, current_state, current_country, current_pincode,
                 permanent_address_line, permanent_city, permanent_state, permanent_country, permanent_pincode,
                 previous_school, previous_class, previous_year, previous_tc_no,
                 bank_name, bank_branch, ifsc_code, blood_group, height, weight,
                 hostel_name, room_no, room_type, description
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
             if (($_POST['has_previous_schooling'] ?? '0') !== '1') {
                 $form_data['previous_school'] = '';
@@ -81,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ad_no, $form_data['name'], $form_data['roll'], $form_data['class'], $form_data['section'],
                 $form_data['dob'], $form_data['gender'], $form_data['mobile'], $form_data['email'],
                 $form_data['category'], $form_data['status'], rand(1, 10),
-                $photo, $form_data['current_address'], $form_data['permanent_address'],
+                $photo, $aadhar, $form_data['current_address'], $form_data['permanent_address'],
                 $form_data['current_address_line'], $form_data['current_city'], $form_data['current_state'], $form_data['current_country'], $form_data['current_pincode'],
                 $form_data['permanent_address_line'], $form_data['permanent_city'], $form_data['permanent_state'], $form_data['permanent_country'], $form_data['permanent_pincode'],
                 $form_data['previous_school'], $form_data['previous_class'], $form_data['previous_year'], $form_data['previous_tc_no'],
@@ -93,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $student_id = $pdo->lastInsertId();
             saveStudentGuardians($pdo, $student_id, guardiansFromForm($_POST));
 
-            $_SESSION['success_msg'] = 'Student added! Admission No: ' . $ad_no;
+            $_SESSION['success_msg'] = 'Student added! Serial No: ' . $ad_no;
             header('Location: students.php');
             exit;
         } catch (RuntimeException $e) {
@@ -105,13 +112,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['error_msg'] = implode(' ', $errors);
     }
     $generated_ad_no = $form_data['class'] !== ''
-    ? generateAdmissionNo($pdo, $form_data['class'])
-    : 'Select class first';
-    if ($form_data['class'] !== '') {
-        $generated_roll = $form_data['roll'] !== ''
-            ? $form_data['roll']
-            : getNextRollNumber($pdo, $form_data['class'], $form_data['section']);
-    }
+        ? generateAdmissionNo($pdo, $form_data['class'], $form_data['section'] ?: 'A')
+        : 'Select class & section';
 }
 
 require_once 'includes/header.php';
@@ -147,6 +149,17 @@ document.getElementById('photo').addEventListener('change', function (e) {
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function (ev) { preview.innerHTML = '<img src="' + ev.target.result + '" alt="Preview">'; };
+    reader.readAsDataURL(file);
+});
+document.getElementById('aadhar').addEventListener('change', function (e) {
+    var file = e.target.files[0], preview = document.getElementById('aadharPreview');
+    if (!file || !preview) return;
+    if (file.type === 'application/pdf') {
+        preview.innerHTML = '<i class="fas fa-file-pdf"></i><span>' + file.name + '</span>';
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function (ev) { preview.innerHTML = '<img src="' + ev.target.result + '" alt="Aadhar Preview">'; };
     reader.readAsDataURL(file);
 });
 </script>

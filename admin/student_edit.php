@@ -32,6 +32,7 @@ $category_options = getCategoryOptions($pdo);
 $mode = 'edit';
 $ad_no = $student['ad_no'];
 $photo_url = getStudentPhotoUrl($student);
+$aadhar_url = getStudentAadharUrl($student);
 $exclude_student_id = $id;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -40,11 +41,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $form_data[$key] = trim($_POST[$key] ?? '');
     }
 
+    // Keep existing roll; clear email/description from form (no longer collected)
+    $form_data['roll'] = $student['roll'];
+    $form_data['email'] = $student['email'] ?? '';
+    $form_data['description'] = $student['description'] ?? '';
+
     $errors = [];
     if ($form_data['name'] === '') $errors[] = 'Student name is required.';
     if ($form_data['class'] === '') $errors[] = 'Class is required.';
-    if ($form_data['mobile'] === '') $errors[] = 'Mobile is required.';
-    $errors = array_merge($errors, validateStudentRoll($pdo, $form_data['roll'], $form_data['class'], $form_data['section'], $id));
+    if ($form_data['mobile'] === '') $errors[] = 'Contact number is required.';
     $errors = array_merge($errors, validateClassAndSection($pdo, $form_data['class'], $form_data['section']));
 
     if (empty($errors)) {
@@ -60,9 +65,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($uploaded) $photo = $uploaded;
             }
 
+            $aadhar = $student['aadhar'] ?? null;
+            if (!empty($_FILES['aadhar']['name'])) {
+                $uploadedAadhar = uploadStudentAadhar($_FILES['aadhar'], $ad_no);
+                if ($uploadedAadhar === false) {
+                    $_SESSION['error_msg'] = 'Invalid Aadhar file. Use JPG/PNG/PDF under 2MB.';
+                    header('Location: student_edit.php?id=' . $id);
+                    exit;
+                }
+                if ($uploadedAadhar) $aadhar = $uploadedAadhar;
+            }
+
             $stmt = $pdo->prepare("UPDATE students SET
                 name=?, roll=?, class=?, section=?, dob=?, gender=?, mobile=?, email=?, category=?, status=?,
-                photo=?, current_address=?, permanent_address=?,
+                photo=?, aadhar=?, current_address=?, permanent_address=?,
                 current_address_line=?, current_city=?, current_state=?, current_country=?, current_pincode=?,
                 permanent_address_line=?, permanent_city=?, permanent_state=?, permanent_country=?, permanent_pincode=?,
                 previous_school=?, previous_class=?, previous_year=?, previous_tc_no=?,
@@ -82,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([
                 $form_data['name'], $form_data['roll'], $form_data['class'], $form_data['section'],
                 $form_data['dob'], $form_data['gender'], $form_data['mobile'], $form_data['email'],
-                $form_data['category'], $form_data['status'], $photo,
+                $form_data['category'], $form_data['status'], $photo, $aadhar,
                 $form_data['current_address'], $form_data['permanent_address'],
                 $form_data['current_address_line'], $form_data['current_city'], $form_data['current_state'], $form_data['current_country'], $form_data['current_pincode'],
                 $form_data['permanent_address_line'], $form_data['permanent_city'], $form_data['permanent_state'], $form_data['permanent_country'], $form_data['permanent_pincode'],
@@ -120,7 +136,7 @@ require_once 'includes/header.php';
                     <span><?php echo htmlspecialchars($student['name']); ?></span>
                 </p>
                 <div class="student-header-meta">
-                    <span class="header-meta-chip"><i class="fas fa-id-card"></i> <?php echo htmlspecialchars($ad_no); ?></span>
+                    <span class="header-meta-chip"><i class="fas fa-hashtag"></i> <?php echo htmlspecialchars($ad_no); ?></span>
                 </div>
             </div>
         </div>
@@ -143,6 +159,17 @@ document.getElementById('photo').addEventListener('change', function (e) {
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function (ev) { preview.innerHTML = '<img src="' + ev.target.result + '" alt="Preview">'; };
+    reader.readAsDataURL(file);
+});
+document.getElementById('aadhar').addEventListener('change', function (e) {
+    var file = e.target.files[0], preview = document.getElementById('aadharPreview');
+    if (!file || !preview) return;
+    if (file.type === 'application/pdf') {
+        preview.innerHTML = '<i class="fas fa-file-pdf"></i><span>' + file.name + '</span>';
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function (ev) { preview.innerHTML = '<img src="' + ev.target.result + '" alt="Aadhar Preview">'; };
     reader.readAsDataURL(file);
 });
 </script>

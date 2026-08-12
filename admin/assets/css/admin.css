@@ -4363,6 +4363,7 @@ button.action-btn {
     grid-template-columns: 1fr 1fr auto;
     gap: 16px;
     align-items: end;
+    padding: 20px;
 }
 
 .category-add-btn-wrap {
@@ -5904,6 +5905,11 @@ button.action-btn {
     border-radius: 18px;
     color: #fff;
     box-shadow: 0 8px 28px rgba(234, 88, 12, 0.22);
+}
+
+.fc-student-hero.hfc-student-hero {
+    background: linear-gradient(135deg, #0e7490 0%, #0891b2 45%, #06b6d4 100%);
+    box-shadow: 0 8px 28px rgba(8, 145, 178, 0.22);
 }
 
 .fc-student-hero-main {
@@ -13478,6 +13484,22 @@ select.form-input.addr-permanent.is-readonly {
     color: var(--white);
 }
 
+.aadhar-upload-preview {
+    width: 140px;
+    height: 100px;
+}
+
+.aadhar-upload-preview span {
+    max-width: 90%;
+    text-align: center;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.aadhar-upload-preview .fa-file-pdf {
+    color: #dc2626;
+}
+
 /* Form actions */
 .form-actions-bar {
     display: flex;
@@ -13599,6 +13621,13 @@ select.form-input.addr-permanent.is-readonly {
     color: #0d9488;
     border-color: #99f6e4;
     box-shadow: 0 4px 12px rgba(13, 148, 136, 0.1);
+}
+
+.content-top-icon.icon-cyan {
+    background: linear-gradient(135deg, #ecfeff, #cffafe);
+    color: #0891b2;
+    border-color: #a5f3fc;
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.12);
 }
 
 .content-top-title {
@@ -14687,4 +14716,408 @@ select.form-input.addr-permanent.is-readonly {
     .db-flow-arrow {
         display: none;
     }
+}
+
+/* Hostel Fee Structure page */
+.hfs-hero {
+    background: linear-gradient(135deg, #0e7490 0%, #0891b2 45%, #06b6d4 100%);
+    box-shadow: 0 8px 28px rgba(8, 145, 178, 0.22);
+    margin-bottom: 20px;
+}
+
+.hfs-quick-links .fs-quick-link i {
+    color: #0891b2;
+}
+
+.hfs-quick-links .fs-quick-link:hover {
+    border-color: #a5f3fc;
+    background: #ecfeff;
+    color: #0e7490;
+}
+
+.hfs-icon {
+    background: #ecfeff !important;
+    color: #0891b2 !important;
+}
+
+.hfs-count {
+    background: #ecfeff !important;
+    color: #0e7490 !important;
+}
+
+.hfs-admission-form {
+    padding: 20px 22px 22px;
+}
+
+.hfs-admission-grid {
+    display: grid;
+    grid-template-columns: minmax(160px, 220px) minmax(180px, 280px) auto;
+    gap: 18px;
+    align-items: end;
+}
+
+.hfs-admission-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #ecfeff, #f0fdfa);
+    border: 1px solid #a5f3fc;
+}
+
+.hfs-admission-kicker {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #0891b2;
+}
+
+.hfs-admission-preview strong {
+    font-size: 1.55rem;
+    color: #0f172a;
+    line-height: 1.1;
+}
+
+.hfs-admission-preview em {
+    font-style: normal;
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.hfs-admission-actions label {
+    display: block;
+}
+
+.hfs-plans-form {
+    padding: 0;
+}
+
+.hfs-plan-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 18px 22px;
+}
+
+.hfs-plan-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.hfs-plan-card.is-monthly {
+    background: linear-gradient(180deg, #fff 0%, #f0fdfa 100%);
+    border-color: #a5f3fc;
+}
+
+.hfs-plan-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.hfs-plan-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #ecfeff;
+    color: #0891b2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hfs-plan-top h5 {
+    margin: 0 0 2px;
+    font-size: 0.98rem;
+    color: #0f172a;
+}
+
+.hfs-plan-top p {
+    margin: 0;
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.hfs-plan-net {
+    margin-left: auto;
+    text-align: right;
+}
+
+.hfs-plan-net span {
+    display: block;
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+}
+
+.hfs-plan-net strong {
+    font-size: 1.1rem;
+    color: #0e7490;
+}
+
+.hfs-plan-fields {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.hfs-plan-fields .form-field,
+.hfs-plan-installments .form-field {
+    margin: 0;
+}
+
+.hfs-plan-fields label,
+.hfs-plan-installments label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #94a3b8;
+    margin-bottom: 5px;
+}
+
+.hfs-plan-installments {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+}
+
+.hfs-plan-note {
+    font-size: 0.8rem;
+    color: #64748b;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px dashed #e2e8f0;
+}
+
+.hfs-plan-note i {
+    color: #0891b2;
+    margin-right: 6px;
+}
+
+.hfs-class-grid {
+    padding: 18px 22px 22px;
+}
+
+.hfs-class-pill.is-active {
+    border-color: #67e8f9;
+    box-shadow: 0 8px 20px rgba(8, 145, 178, 0.14);
+}
+
+.hfs-class-pill.is-active .fs-class-pill-icon,
+.hfs-class-pill.is-configured .fs-class-pill-icon {
+    background: #ecfeff;
+    color: #0891b2;
+}
+
+.hfs-class-pill.is-active .fs-class-pill-name,
+.hfs-class-pill.is-active .fs-class-pill-amount {
+    color: #0e7490;
+}
+
+.hfs-total-pill {
+    background: #ecfeff;
+    color: #0e7490;
+    border-color: #a5f3fc;
+}
+
+.hfs-pick-icon {
+    background: #ecfeff !important;
+    color: #0891b2 !important;
+}
+
+.fs-head-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fs-head-cell-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+.fs-head-cell-icon.tone-cyan {
+    background: #ecfeff;
+    color: #0891b2;
+}
+
+.fs-head-cell-icon.tone-purple {
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+@media (max-width: 1100px) {
+    .hfs-plan-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hfs-admission-grid {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 768px) {
+    .hfs-plan-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .fs-structure-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .fs-structure-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+}
+
+/* Hostel fee collect — unified search + row cards */
+.hfc-search-card .section-card-header {
+    margin-bottom: 0;
+}
+
+.hfc-search-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px 16px;
+    padding: 18px 22px 8px;
+}
+
+.hfc-search-form .form-field {
+    margin: 0;
+    min-width: 140px;
+}
+
+.hfc-search-form .form-field-grow {
+    flex: 1 1 220px;
+    min-width: 200px;
+}
+
+.hfc-search-btn-wrap {
+    flex: 0 0 auto;
+}
+
+.hfc-student-list {
+    padding: 8px 18px 18px;
+    gap: 10px;
+}
+
+.hfc-student-row {
+    border-left-color: #0891b2 !important;
+    border-radius: 14px !important;
+    min-height: 64px;
+}
+
+.hfc-student-row:hover {
+    border-color: #67e8f9 !important;
+    border-left-color: #0e7490 !important;
+    box-shadow: 0 8px 22px rgba(8, 145, 178, 0.12) !important;
+}
+
+.hfc-student-main {
+    padding: 12px 16px !important;
+    gap: 12px !important;
+}
+
+.hfc-student-row .student-search-avatar.is-initials {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #ecfeff 0%, #f0fdfa 100%);
+    border: 1px solid #a5f3fc;
+    color: #0891b2;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.hfc-student-info {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 12px;
+}
+
+.hfc-student-info strong {
+    display: inline;
+    margin: 0;
+    font-size: 0.95rem;
+    color: #0f172a;
+}
+
+.hfc-student-info span {
+    display: inline;
+    font-size: 0.84rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.hfc-student-row .student-search-go {
+    background: #f8fafc;
+    color: #64748b;
+    border-left: 1px solid #e2e8f0;
+}
+
+.hfc-student-row:hover .student-search-go {
+    background: #ecfeff;
+    color: #0891b2;
+}
+
+@media (max-width: 768px) {
+    .hfc-search-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hfc-search-btn-wrap .btn-header-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hfc-student-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+}
+
+.hfc-student-row.student-search-link .student-search-go {
+    width: 44px;
+    height: auto;
+    align-self: stretch;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    border-left: 1px solid #eef2f7;
+    background: transparent;
+    color: #94a3b8;
+    box-shadow: none;
+}
+
+.hfc-student-row.student-search-link:hover .student-search-go {
+    background: #ecfeff;
+    color: #0891b2;
+    border-color: #cffafe;
+    transform: none;
 }

@@ -12,9 +12,20 @@ $feeMonthOrder = getFeeMonthOrder();
 $feeMonthLabels = getFeeMonthLabels();
 $selectedClass = trim($_GET['class'] ?? '');
 $classSummaries = getHostelClassFeeSummaries($pdo, $sessionId);
+$admissionFeeAmount = getHostelAdmissionFeeAmount($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
+    if ($action === 'save_admission_fee') {
+        $amt = max(0, (float) ($_POST['hostel_admission_fee'] ?? 1000));
+        if (!function_exists('setSetting')) {
+            require_once 'includes/settings_helpers.php';
+        }
+        setSetting($pdo, 'hostel_admission_fee', (string) $amt);
+        $_SESSION['success_msg'] = 'Hostel admission fee saved: ₹' . number_format($amt, 0);
+        header('Location: hostel_fees.php' . ($selectedClass !== '' ? '?class=' . urlencode($selectedClass) : '') . '#admission');
+        exit;
+    }
     if ($action === 'save_structure') {
         $className = trim($_POST['class_name'] ?? '');
         $amounts = $_POST['amount'] ?? [];
@@ -23,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['success_msg'] = 'Hostel fee structure saved for ' . $className;
             $selectedClass = $className;
         }
-        header('Location: hostel_fees.php' . ($selectedClass !== '' ? '?class=' . urlencode($selectedClass) : ''));
+        header('Location: hostel_fees.php' . ($selectedClass !== '' ? '?class=' . urlencode($selectedClass) : '') . '#structure');
         exit;
     }
     if ($action === 'fill_monthly') {
@@ -34,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['success_msg'] = 'Filled ₹' . number_format($monthly, 0) . '/month for ' . $className . ' (₹' . number_format($monthly * 12, 0) . '/year).';
             $selectedClass = $className;
         }
-        header('Location: hostel_fees.php' . ($selectedClass !== '' ? '?class=' . urlencode($selectedClass) : ''));
+        header('Location: hostel_fees.php' . ($selectedClass !== '' ? '?class=' . urlencode($selectedClass) : '') . '#structure');
         exit;
     }
     if ($action === 'save_plans') {
@@ -88,12 +99,15 @@ function formatHostelFeeInputAmount($amount) {
 $amountMap = $selectedClass !== '' ? getHostelFeeAmountMap($pdo, $selectedClass, $sessionId) : [];
 $structureTotal = array_sum($amountMap);
 $currentMonth = (int) date('n');
+$configuredClassCount = count($classSummaries);
+$planCount = count($hostelPlans);
 
 require_once 'includes/header.php';
 ?>
+<div class="hfs-page">
 <div class="content-top-bar">
     <div class="content-top-main">
-        <div class="content-top-icon icon-purple"><i class="fas fa-bed"></i></div>
+        <div class="content-top-icon icon-cyan"><i class="fas fa-bed"></i></div>
         <div class="content-top-title">
             <h2>Hostel Fee Structure</h2>
             <p class="content-top-breadcrumb">
@@ -111,115 +125,175 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-<div class="fs-quick-links">
-    <a href="hostel.php" class="fs-quick-link"><i class="fas fa-bed"></i><span>Rooms &amp; Allotment</span></a>
-    <a href="hostel_fee_collect.php" class="fs-quick-link"><i class="fas fa-hand-holding-usd"></i><span>Collect Hostel Fee</span></a>
-    <a href="#plans" class="fs-quick-link"><i class="fas fa-layer-group"></i><span>Payment Plans</span></a>
+<div class="fs-hero hfs-hero">
+    <div class="fs-hero-main">
+        <p class="fs-hero-label"><i class="fas fa-bed"></i> Hostel fees · session setup</p>
+        <h3><?php echo htmlspecialchars($session['name'] ?? 'Current Session'); ?></h3>
+        <p>Admission fee, payment plans, and class-wise monthly hostel charges.</p>
+    </div>
+    <div class="fs-hero-stats">
+        <div class="fs-hero-stat is-highlight">
+            <span>Admission Fee</span>
+            <strong>₹<?php echo number_format($admissionFeeAmount, 0); ?></strong>
+        </div>
+        <div class="fs-hero-stat">
+            <span>Plans</span>
+            <strong><?php echo $planCount; ?></strong>
+        </div>
+        <div class="fs-hero-stat">
+            <span>Classes Set</span>
+            <strong><?php echo $configuredClassCount; ?>/<?php echo count($class_options); ?></strong>
+        </div>
+    </div>
 </div>
 
-<div class="form-section-card section-mb" id="plans">
+<div class="fs-quick-links hfs-quick-links">
+    <a href="#admission" class="fs-quick-link"><i class="fas fa-id-card"></i><span>Admission Fee</span></a>
+    <a href="#plans" class="fs-quick-link"><i class="fas fa-layer-group"></i><span>Payment Plans</span></a>
+    <a href="#classes" class="fs-quick-link"><i class="fas fa-school"></i><span>Class Monthly Fee</span></a>
+    <a href="hostel_fee_collect.php" class="fs-quick-link"><i class="fas fa-hand-holding-usd"></i><span>Collect Fee</span></a>
+</div>
+
+<div class="form-section-card section-mb fs-heads-card" id="admission">
     <div class="fs-card-head">
-        <div class="fs-card-head-icon is-blue"><i class="fas fa-layer-group"></i></div>
+        <div class="fs-card-head-icon hfs-icon"><i class="fas fa-id-card"></i></div>
+        <div class="fs-card-head-text">
+            <h4>One-time Hostel Admission Fee</h4>
+            <p>Charged once when a student is allotted hostel — separate from monthly / installment fees</p>
+        </div>
+        <span class="fs-head-count hfs-count">₹<?php echo number_format($admissionFeeAmount, 0); ?></span>
+    </div>
+    <form method="POST" class="hfs-admission-form">
+        <input type="hidden" name="action" value="save_admission_fee">
+        <div class="hfs-admission-grid">
+            <div class="hfs-admission-preview">
+                <span class="hfs-admission-kicker">Current</span>
+                <strong>₹<?php echo number_format($admissionFeeAmount, 0); ?></strong>
+                <em>one-time per student</em>
+            </div>
+            <div class="form-field">
+                <label for="hostel_admission_fee"><i class="fas fa-rupee-sign"></i> Admission Fee Amount</label>
+                <input type="number" step="0.01" min="0" id="hostel_admission_fee" name="hostel_admission_fee" class="form-input"
+                       value="<?php echo htmlspecialchars(formatHostelFeeInputAmount($admissionFeeAmount) ?: '1000'); ?>" required>
+            </div>
+            <div class="form-field hfs-admission-actions">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn-header-action btn-header-primary"><i class="fas fa-save"></i> Save Admission Fee</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="form-section-card section-mb fs-heads-card" id="plans">
+    <div class="fs-card-head">
+        <div class="fs-card-head-icon hfs-icon"><i class="fas fa-layer-group"></i></div>
         <div class="fs-card-head-text">
             <h4>Hostel Payment Plans</h4>
             <p>Monthly ₹4,500 · Annual ₹54,000 · Installment options with discount</p>
         </div>
+        <span class="fs-head-count hfs-count"><?php echo $planCount; ?> plans</span>
     </div>
-    <form method="POST">
+    <form method="POST" class="hfs-plans-form">
         <input type="hidden" name="action" value="save_plans">
-        <div class="table-wrapper">
-            <table class="fs-month-table">
-                <thead>
-                    <tr>
-                        <th>Plan</th>
-                        <th>Label</th>
-                        <th>Gross</th>
-                        <th>Discount</th>
-                        <th>Pay (Net)</th>
-                        <th>Installment amounts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($hostelPlans as $plan):
-                    $pid = (int) $plan['id'];
-                    $count = (int) $plan['installment_count'];
-                    $amounts = $plan['amounts'] ?? [];
-                    $net = (float) $plan['net_amount'];
-                ?>
-                <tr>
-                    <td>
-                        <input type="hidden" name="plans[<?php echo $pid; ?>][plan_type]" value="<?php echo htmlspecialchars($plan['plan_type']); ?>">
-                        <input type="hidden" name="plans[<?php echo $pid; ?>][installment_count]" value="<?php echo $count; ?>">
-                        <input type="hidden" name="plans[<?php echo $pid; ?>][sort_order]" value="<?php echo (int) $plan['sort_order']; ?>">
-                        <strong><?php echo htmlspecialchars($plan['name']); ?></strong>
-                        <div style="font-size:0.78rem;color:#64748b;margin-top:4px">
-                            <?php echo $plan['plan_type'] === 'monthly' ? 'Month-wise collection' : $count . ' installment' . ($count === 1 ? '' : 's'); ?>
-                        </div>
-                        <input type="hidden" name="plans[<?php echo $pid; ?>][name]" value="<?php echo htmlspecialchars($plan['name']); ?>">
-                    </td>
-                    <td>
-                        <input type="text" name="plans[<?php echo $pid; ?>][installment_label]" class="form-input" style="min-width:110px"
+        <div class="hfs-plan-grid">
+            <?php foreach ($hostelPlans as $plan):
+                $pid = (int) $plan['id'];
+                $count = (int) $plan['installment_count'];
+                $amounts = $plan['amounts'] ?? [];
+                $net = (float) $plan['net_amount'];
+                $gross = (float) $plan['gross_amount'];
+                $disc = (float) $plan['discount_amount'];
+                $isMonthly = ($plan['plan_type'] ?? '') === 'monthly';
+            ?>
+            <div class="hfs-plan-card<?php echo $isMonthly ? ' is-monthly' : ''; ?>">
+                <input type="hidden" name="plans[<?php echo $pid; ?>][plan_type]" value="<?php echo htmlspecialchars($plan['plan_type']); ?>">
+                <input type="hidden" name="plans[<?php echo $pid; ?>][installment_count]" value="<?php echo $count; ?>">
+                <input type="hidden" name="plans[<?php echo $pid; ?>][sort_order]" value="<?php echo (int) $plan['sort_order']; ?>">
+                <input type="hidden" name="plans[<?php echo $pid; ?>][name]" value="<?php echo htmlspecialchars($plan['name']); ?>">
+
+                <div class="hfs-plan-top">
+                    <div class="hfs-plan-icon"><i class="fas fa-<?php echo $isMonthly ? 'calendar-alt' : 'coins'; ?>"></i></div>
+                    <div>
+                        <h5><?php echo htmlspecialchars($plan['name']); ?></h5>
+                        <p><?php echo $isMonthly ? 'Month-wise collection' : ($count . ' installment' . ($count === 1 ? '' : 's')); ?></p>
+                    </div>
+                    <div class="hfs-plan-net">
+                        <span>Pay</span>
+                        <strong>₹<?php echo number_format($net, 0); ?></strong>
+                    </div>
+                </div>
+
+                <div class="hfs-plan-fields">
+                    <div class="form-field">
+                        <label>Label</label>
+                        <input type="text" name="plans[<?php echo $pid; ?>][installment_label]" class="form-input"
                                value="<?php echo htmlspecialchars($plan['installment_label'] ?? ''); ?>" placeholder="e.g. 18000×3">
-                    </td>
-                    <td>
-                        <input type="number" step="0.01" min="0" name="plans[<?php echo $pid; ?>][gross_amount]" class="form-input" style="width:110px"
-                               value="<?php echo htmlspecialchars(formatHostelFeeInputAmount($plan['gross_amount'])); ?>">
-                    </td>
-                    <td>
-                        <input type="number" step="0.01" min="0" name="plans[<?php echo $pid; ?>][discount_amount]" class="form-input" style="width:100px"
-                               value="<?php echo htmlspecialchars(formatHostelFeeInputAmount($plan['discount_amount'])); ?>">
-                    </td>
-                    <td><strong>₹<?php echo number_format($net, 0); ?></strong></td>
-                    <td>
-                        <?php if ($plan['plan_type'] === 'monthly'): ?>
-                        <span style="color:#64748b;font-size:0.85rem">Uses monthly structure (₹4,500 × 12)</span>
-                        <?php else: ?>
-                        <div style="display:flex;flex-wrap:wrap;gap:8px">
-                            <?php for ($i = 1; $i <= $count; $i++): ?>
-                            <div class="form-field" style="margin:0;min-width:90px">
-                                <label style="font-size:0.72rem">#<?php echo $i; ?></label>
-                                <input type="number" step="0.01" min="0"
-                                       name="plans[<?php echo $pid; ?>][amount][<?php echo $i; ?>]"
-                                       class="form-input"
-                                       value="<?php echo htmlspecialchars(formatHostelFeeInputAmount($amounts[$i - 1] ?? 0)); ?>">
-                            </div>
-                            <?php endfor; ?>
-                        </div>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </div>
+                    <div class="form-field">
+                        <label>Gross (₹)</label>
+                        <input type="number" step="0.01" min="0" name="plans[<?php echo $pid; ?>][gross_amount]" class="form-input"
+                               value="<?php echo htmlspecialchars(formatHostelFeeInputAmount($gross)); ?>">
+                    </div>
+                    <div class="form-field">
+                        <label>Discount (₹)</label>
+                        <input type="number" step="0.01" min="0" name="plans[<?php echo $pid; ?>][discount_amount]" class="form-input"
+                               value="<?php
+                                   $planCode = (string) ($plan['plan_code'] ?? '');
+                                   if (in_array($planCode, ['monthly', 'inst_3'], true)) {
+                                       echo '0';
+                                   } else {
+                                       echo htmlspecialchars($disc > 0 ? formatHostelFeeInputAmount($disc) : '0');
+                                   }
+                               ?>">
+                    </div>
+                </div>
+
+                <?php if ($isMonthly): ?>
+                <div class="hfs-plan-note"><i class="fas fa-info-circle"></i> Uses class monthly structure (₹4,500 × 12)</div>
+                <?php else: ?>
+                <div class="hfs-plan-installments">
+                    <?php for ($i = 1; $i <= $count; $i++): ?>
+                    <div class="form-field">
+                        <label>Installment #<?php echo $i; ?></label>
+                        <input type="number" step="0.01" min="0"
+                               name="plans[<?php echo $pid; ?>][amount][<?php echo $i; ?>]"
+                               class="form-input"
+                               value="<?php echo htmlspecialchars(formatHostelFeeInputAmount($amounts[$i - 1] ?? 0)); ?>">
+                    </div>
+                    <?php endfor; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
         </div>
         <div class="fs-structure-foot">
             <div class="fs-foot-note">
                 <i class="fas fa-info-circle"></i>
-                <strong>3×</strong> ₹18,000 (no discount) ·
-                <strong>2×</strong> ₹27,000 (₹2,000 off → pay ₹52,000) ·
-                <strong>1×</strong> full (₹4,000 off → pay ₹50,000)
+                <strong>3×</strong> ₹18,000 ·
+                <strong>2×</strong> ₹27,000 (₹2,000 off) ·
+                <strong>1×</strong> full (₹4,000 off)
             </div>
             <button type="submit" class="btn-header-action btn-header-primary"><i class="fas fa-save"></i> Save Plans</button>
         </div>
     </form>
 </div>
 
-<div class="form-section-card section-mb">
+<div class="form-section-card section-mb fs-class-card" id="classes">
     <div class="fs-card-head">
-        <div class="fs-card-head-icon"><i class="fas fa-school"></i></div>
+        <div class="fs-card-head-icon hfs-icon"><i class="fas fa-school"></i></div>
         <div class="fs-card-head-text">
             <h4>Select Class</h4>
             <p>Set monthly hostel fee for each class (only allotted students are charged)</p>
         </div>
         <span class="fs-class-count"><?php echo count($class_options); ?> class<?php echo count($class_options) === 1 ? '' : 'es'; ?></span>
     </div>
-    <div class="fs-class-grid">
+    <div class="fs-class-grid hfs-class-grid">
         <?php foreach ($class_options as $c):
             $summary = $classSummaries[$c] ?? null;
             $isActive = $selectedClass === $c;
             $isConfigured = (bool) $summary;
         ?>
-        <a href="hostel_fees.php?class=<?php echo urlencode($c); ?>" class="fs-class-pill<?php echo $isActive ? ' is-active' : ''; ?><?php echo $isConfigured ? ' is-configured' : ' is-empty'; ?>">
+        <a href="hostel_fees.php?class=<?php echo urlencode($c); ?>#structure" class="fs-class-pill hfs-class-pill<?php echo $isActive ? ' is-active' : ''; ?><?php echo $isConfigured ? ' is-configured' : ' is-empty'; ?>">
             <div class="fs-class-pill-top">
                 <span class="fs-class-pill-icon"><i class="fas fa-bed"></i></span>
                 <?php if ($isConfigured): ?>
@@ -244,21 +318,25 @@ require_once 'includes/header.php';
 </div>
 
 <?php if ($selectedClass !== ''): ?>
-<form method="POST" class="form-section-card section-mb fs-structure-form">
+<form method="POST" class="form-section-card section-mb fs-structure-card fs-structure-form" id="structure">
     <input type="hidden" name="class_name" value="<?php echo htmlspecialchars($selectedClass); ?>">
     <input type="hidden" name="monthly_amount" value="4500">
-    <div class="fs-card-head">
-        <div class="fs-card-head-icon is-blue"><i class="fas fa-calendar-alt"></i></div>
-        <div class="fs-card-head-text">
-            <h4>Monthly Hostel Fee — <?php echo htmlspecialchars($selectedClass); ?></h4>
-            <p>Base rate ₹4,500/month = ₹54,000/year. Used when student chooses the Monthly plan.</p>
+    <div class="fs-structure-head">
+        <div class="fs-structure-title">
+            <div class="fs-structure-icon hfs-icon"><i class="fas fa-calendar-alt"></i></div>
+            <div>
+                <h4>Monthly Hostel Fee — <?php echo htmlspecialchars($selectedClass); ?></h4>
+                <p>Base rate ₹4,500/month = ₹54,000/year. Used for the Monthly plan.</p>
+            </div>
         </div>
-        <span class="fs-total-pill">₹<?php echo number_format($structureTotal, 0); ?> / year</span>
-        <button type="submit" name="action" value="fill_monthly" class="btn-header-action btn-header-outline"><i class="fas fa-magic"></i> Fill ₹4500</button>
-        <button type="submit" name="action" value="save_structure" class="btn-header-action btn-header-primary"><i class="fas fa-save"></i> Save</button>
+        <div class="fs-structure-actions">
+            <span class="fs-total-pill hfs-total-pill">₹<?php echo number_format($structureTotal, 0); ?> / year</span>
+            <button type="submit" name="action" value="fill_monthly" class="btn-header-action btn-header-outline"><i class="fas fa-magic"></i> Fill ₹4500</button>
+            <button type="submit" name="action" value="save_structure" class="btn-header-action btn-header-primary"><i class="fas fa-save"></i> Save</button>
+        </div>
     </div>
 
-    <div class="table-wrapper">
+    <div class="fs-month-table-wrap">
         <table class="fs-month-table">
             <thead>
                 <tr>
@@ -274,7 +352,7 @@ require_once 'includes/header.php';
                 <tr data-head-row>
                     <td>
                         <div class="fs-head-cell">
-                            <div class="fs-head-cell-icon tone-purple"><i class="fas fa-bed"></i></div>
+                            <div class="fs-head-cell-icon tone-cyan"><i class="fas fa-bed"></i></div>
                             <div><strong>Hostel Fee</strong></div>
                         </div>
                     </td>
@@ -357,10 +435,11 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <?php else: ?>
 <div class="form-section-card fs-pick-class section-mb">
-    <div class="fs-pick-class-icon"><i class="fas fa-hand-pointer"></i></div>
+    <div class="fs-pick-class-icon hfs-pick-icon"><i class="fas fa-hand-pointer"></i></div>
     <h4>Select a class above</h4>
-    <p>Pick a class to set monthly hostel fee amounts.</p>
+    <p>Pick a class to set monthly hostel fee amounts (₹4,500 × 12).</p>
 </div>
 <?php endif; ?>
+</div>
 
 <?php require_once 'includes/footer.php'; ?>

@@ -41,11 +41,14 @@ $installmentNo = (int) ($p['installment_no'] ?? 0);
 if ($installmentNo < 1 && preg_match('/\[installment:(\d+)\]/', (string) ($p['remarks'] ?? ''), $mInst)) {
     $installmentNo = (int) $mInst[1];
 }
-$feeForLabel = $installmentNo > 0
-    ? ('Installment ' . $installmentNo)
-    : ($feeMonthLabel ?: '—');
+$isAdmissionFee = isHostelAdmissionPayment($p);
+$feeForLabel = $isAdmissionFee
+    ? 'Admission Fee'
+    : ($installmentNo > 0
+        ? ('Installment ' . $installmentNo)
+        : ($feeMonthLabel ?: '—'));
 $planLabel = '';
-if (!empty($p['plan_id'])) {
+if (!$isAdmissionFee && !empty($p['plan_id'])) {
     $planRow = getHostelFeePlanById($pdo, (int) $p['plan_id']);
     if ($planRow) {
         $planLabel = $planRow['name'] . (!empty($planRow['installment_label']) ? ' (' . $planRow['installment_label'] . ')' : '');
@@ -54,7 +57,13 @@ if (!empty($p['plan_id'])) {
 $paymentDateLabel = !empty($p['payment_date']) ? date('d M Y', strtotime($p['payment_date'])) : '—';
 $hostelInfo = getStudentHostelDetails($pdo, (int) $p['student_id']);
 $displayRemarks = formatPaymentRemarksForDisplay($p['remarks'] ?? '');
-$amountWords = feeReceiptAmountInWords((float) $p['amount']);
+$displayRemarks = trim(preg_replace('/\[admission_fee\]\s*/i', '', $displayRemarks));
+$cashAmount = (float) $p['amount'];
+$discountAmount = function_exists('hostelPaymentDiscountAmount')
+    ? hostelPaymentDiscountAmount($p)
+    : (float) ($p['discount_amount'] ?? 0);
+$totalCredit = $cashAmount + $discountAmount;
+$amountWords = feeReceiptAmountInWords($cashAmount);
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -151,7 +160,7 @@ $amountWords = feeReceiptAmountInWords((float) $p['amount']);
                 <tbody>
                     <tr>
                         <td>
-                            Hostel Fee<?php echo $feeForLabel !== '—' ? ' · ' . htmlspecialchars($feeForLabel) : ''; ?>
+                            <?php echo $isAdmissionFee ? 'Hostel Admission Fee' : 'Hostel Fee'; ?><?php echo (!$isAdmissionFee && $feeForLabel !== '—') ? ' · ' . htmlspecialchars($feeForLabel) : ''; ?>
                             <?php if ($planLabel !== ''): ?>
                             <div style="font-size:0.58rem;color:#64748b;margin-top:2px"><?php echo htmlspecialchars($planLabel); ?></div>
                             <?php endif; ?>
@@ -160,14 +169,26 @@ $amountWords = feeReceiptAmountInWords((float) $p['amount']);
                             <?php endif; ?>
                         </td>
                         <td><?php echo htmlspecialchars($p['payment_method'] ?: 'Cash'); ?></td>
-                        <td class="ta-r">₹<?php echo number_format((float) $p['amount'], 2); ?></td>
+                        <td class="ta-r">₹<?php echo number_format($cashAmount, 2); ?></td>
                     </tr>
+                    <?php if ($discountAmount > 0): ?>
+                    <tr>
+                        <td colspan="2">Discount / Waiver</td>
+                        <td class="ta-r">₹<?php echo number_format($discountAmount, 2); ?></td>
+                    </tr>
+                    <?php endif; ?>
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="2"><strong>Total Paid</strong></td>
-                        <td class="ta-r"><strong>₹<?php echo number_format((float) $p['amount'], 2); ?></strong></td>
+                        <td colspan="2"><strong><?php echo $discountAmount > 0 ? 'Total Credited' : 'Total Paid'; ?></strong></td>
+                        <td class="ta-r"><strong>₹<?php echo number_format($totalCredit, 2); ?></strong></td>
                     </tr>
+                    <?php if ($discountAmount > 0): ?>
+                    <tr>
+                        <td colspan="2"><strong>Cash Received</strong></td>
+                        <td class="ta-r"><strong>₹<?php echo number_format($cashAmount, 2); ?></strong></td>
+                    </tr>
+                    <?php endif; ?>
                 </tfoot>
             </table>
             <p class="rc-words"><strong>In words:</strong> Rupees <?php echo htmlspecialchars($amountWords); ?> Only</p>
