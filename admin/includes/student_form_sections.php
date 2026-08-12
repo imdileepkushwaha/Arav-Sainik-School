@@ -151,14 +151,87 @@ if (!empty($form_data['class']) && isset($pdo)) {
             <div class="section-card-icon section-icon-address"><i class="fas fa-map-marker-alt"></i></div>
             <div><h4>Address</h4><p>Current and permanent location</p></div>
         </div>
-        <div class="form-grid">
-            <div class="form-field form-field-full">
-                <label for="current_address">Current Address</label>
-                <textarea id="current_address" name="current_address" class="form-input form-textarea" rows="2"><?php echo htmlspecialchars($form_data['current_address']); ?></textarea>
+        <?php
+        $indianStates = getIndianStates();
+        $sameAsCurrent = trim(($form_data['permanent_address_line'] ?? '') . ($form_data['permanent_city'] ?? '') . ($form_data['permanent_state'] ?? '') . ($form_data['permanent_country'] ?? '') . ($form_data['permanent_pincode'] ?? '')) !== ''
+            && ($form_data['permanent_address_line'] ?? '') === ($form_data['current_address_line'] ?? '')
+            && ($form_data['permanent_city'] ?? '') === ($form_data['current_city'] ?? '')
+            && ($form_data['permanent_state'] ?? '') === ($form_data['current_state'] ?? '')
+            && ($form_data['permanent_country'] ?? '') === ($form_data['current_country'] ?? '')
+            && ($form_data['permanent_pincode'] ?? '') === ($form_data['current_pincode'] ?? '');
+        ?>
+        <label class="address-same-check">
+            <input type="checkbox" name="same_as_current_address" id="sameAsCurrentAddress" value="1" <?php echo $sameAsCurrent ? 'checked' : ''; ?>>
+            <span>Permanent address is same as current address</span>
+        </label>
+
+        <div class="address-split">
+            <div class="address-block">
+                <h5 class="address-block-title"><i class="fas fa-home"></i> Current Address</h5>
+                <div class="form-grid form-grid-2">
+                    <div class="form-field form-field-full">
+                        <label for="current_address_line">Address Line</label>
+                        <input type="text" id="current_address_line" name="current_address_line" class="form-input addr-current" value="<?php echo htmlspecialchars($form_data['current_address_line'] ?? ''); ?>" placeholder="House / Street / Landmark">
+                    </div>
+                    <div class="form-field">
+                        <label for="current_city">City</label>
+                        <input type="text" id="current_city" name="current_city" class="form-input addr-current" value="<?php echo htmlspecialchars($form_data['current_city'] ?? ''); ?>" placeholder="City">
+                    </div>
+                    <div class="form-field">
+                        <label for="current_state">State</label>
+                        <select id="current_state" name="current_state" class="form-input form-select addr-current">
+                            <option value="">Select state</option>
+                            <?php foreach ($indianStates as $st): ?>
+                            <option value="<?php echo htmlspecialchars($st); ?>" <?php echo ($form_data['current_state'] ?? '') === $st ? 'selected' : ''; ?>><?php echo htmlspecialchars($st); ?></option>
+                            <?php endforeach; ?>
+                            <?php if (($form_data['current_state'] ?? '') !== '' && !in_array($form_data['current_state'], $indianStates, true)): ?>
+                            <option value="<?php echo htmlspecialchars($form_data['current_state']); ?>" selected><?php echo htmlspecialchars($form_data['current_state']); ?></option>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="current_country">Country</label>
+                        <input type="text" id="current_country" name="current_country" class="form-input addr-current" value="<?php echo htmlspecialchars($form_data['current_country'] ?? 'India'); ?>" placeholder="Country">
+                    </div>
+                    <div class="form-field">
+                        <label for="current_pincode">PIN Code</label>
+                        <input type="text" id="current_pincode" name="current_pincode" class="form-input addr-current" value="<?php echo htmlspecialchars($form_data['current_pincode'] ?? ''); ?>" placeholder="e.g. 110001" maxlength="10">
+                    </div>
+                </div>
             </div>
-            <div class="form-field form-field-full">
-                <label for="permanent_address">Permanent Address</label>
-                <textarea id="permanent_address" name="permanent_address" class="form-input form-textarea" rows="2"><?php echo htmlspecialchars($form_data['permanent_address']); ?></textarea>
+
+            <div class="address-block" id="permanentAddressBlock">
+                <h5 class="address-block-title"><i class="fas fa-map-pin"></i> Permanent Address</h5>
+                <div class="form-grid form-grid-2">
+                    <div class="form-field form-field-full">
+                        <label for="permanent_address_line">Address Line</label>
+                        <input type="text" id="permanent_address_line" name="permanent_address_line" class="form-input addr-permanent" value="<?php echo htmlspecialchars($form_data['permanent_address_line'] ?? ''); ?>" placeholder="House / Street / Landmark">
+                    </div>
+                    <div class="form-field">
+                        <label for="permanent_city">City</label>
+                        <input type="text" id="permanent_city" name="permanent_city" class="form-input addr-permanent" value="<?php echo htmlspecialchars($form_data['permanent_city'] ?? ''); ?>" placeholder="City">
+                    </div>
+                    <div class="form-field">
+                        <label for="permanent_state">State</label>
+                        <select id="permanent_state" name="permanent_state" class="form-input form-select addr-permanent">
+                            <option value="">Select state</option>
+                            <?php foreach ($indianStates as $st): ?>
+                            <option value="<?php echo htmlspecialchars($st); ?>" <?php echo ($form_data['permanent_state'] ?? '') === $st ? 'selected' : ''; ?>><?php echo htmlspecialchars($st); ?></option>
+                            <?php endforeach; ?>
+                            <?php if (($form_data['permanent_state'] ?? '') !== '' && !in_array($form_data['permanent_state'], $indianStates, true)): ?>
+                            <option value="<?php echo htmlspecialchars($form_data['permanent_state']); ?>" selected><?php echo htmlspecialchars($form_data['permanent_state']); ?></option>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="permanent_country">Country</label>
+                        <input type="text" id="permanent_country" name="permanent_country" class="form-input addr-permanent" value="<?php echo htmlspecialchars($form_data['permanent_country'] ?? 'India'); ?>" placeholder="Country">
+                    </div>
+                    <div class="form-field">
+                        <label for="permanent_pincode">PIN Code</label>
+                        <input type="text" id="permanent_pincode" name="permanent_pincode" class="form-input addr-permanent" value="<?php echo htmlspecialchars($form_data['permanent_pincode'] ?? ''); ?>" placeholder="e.g. 110001" maxlength="10">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -166,7 +239,7 @@ if (!empty($form_data['class']) && isset($pdo)) {
     <?php
     $hasPreviousSchooling = trim(($form_data['previous_school'] ?? '') . ($form_data['previous_class'] ?? '') . ($form_data['previous_year'] ?? '') . ($form_data['previous_tc_no'] ?? '')) !== '';
     ?>
-    <div class="form-section-card">
+    <div class="form-section-card"<?php echo !$is_edit ? ' style="display: none;"' : ''; ?>>
         <div class="section-card-header">
             <div class="section-card-icon section-icon-school"><i class="fas fa-school"></i></div>
             <div><h4>Previous Schooling</h4><p>Optional — fill only if the student studied elsewhere before</p></div>
@@ -206,7 +279,7 @@ if (!empty($form_data['class']) && isset($pdo)) {
         </div>
     </div>
 
-    <div class="details-grid">
+    <div class="details-grid"<?php echo !$is_edit ? ' style="display: none;"' : ''; ?>>
         <div class="form-section-card form-section-flush">
             <div class="section-card-header">
                 <div class="section-card-icon section-icon-bank"><i class="fas fa-university"></i></div>
@@ -469,5 +542,59 @@ if (!empty($form_data['class']) && isset($pdo)) {
         }
     }
     radios.forEach(function (r) { r.addEventListener('change', syncPrevSchool); });
+})();
+</script>
+<script>
+(function () {
+    var sameCb = document.getElementById('sameAsCurrentAddress');
+    if (!sameCb) return;
+    var map = [
+        ['current_address_line', 'permanent_address_line'],
+        ['current_city', 'permanent_city'],
+        ['current_state', 'permanent_state'],
+        ['current_country', 'permanent_country'],
+        ['current_pincode', 'permanent_pincode']
+    ];
+    var permanentInputs = document.querySelectorAll('.addr-permanent');
+    var currentInputs = document.querySelectorAll('.addr-current');
+
+    function syncSameAddress() {
+        var same = sameCb.checked;
+        map.forEach(function (pair) {
+            var from = document.getElementById(pair[0]);
+            var to = document.getElementById(pair[1]);
+            if (!from || !to) return;
+            if (same) to.value = from.value;
+            if (to.tagName === 'SELECT') {
+                to.disabled = same;
+                to.classList.toggle('is-readonly', same);
+            } else {
+                to.readOnly = same;
+                to.classList.toggle('is-readonly', same);
+            }
+        });
+    }
+
+    sameCb.addEventListener('change', syncSameAddress);
+    currentInputs.forEach(function (el) {
+        el.addEventListener('input', function () {
+            if (sameCb.checked) syncSameAddress();
+        });
+        el.addEventListener('change', function () {
+            if (sameCb.checked) syncSameAddress();
+        });
+    });
+    // Before submit, re-enable permanent select so value posts if somehow not copied server-side
+    var form = sameCb.closest('form');
+    if (form) {
+        form.addEventListener('submit', function () {
+            var permState = document.getElementById('permanent_state');
+            if (permState && sameCb.checked) {
+                permState.disabled = false;
+                permState.value = document.getElementById('current_state').value;
+            }
+        });
+    }
+    syncSameAddress();
 })();
 </script>

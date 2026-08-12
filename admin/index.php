@@ -242,11 +242,6 @@ $dbSetupTarget = getSetupProfileKey() === 'online' ? 'Online (Server)' : 'Local 
                     </section>
                     <?php endif; ?>
 
-                    <div class="login-portal-links">
-                        <a href="../teacher/" class="login-portal-link"><i class="fas fa-chalkboard-teacher"></i> Teacher Portal</a>
-                        <a href="../portal/" class="login-portal-link"><i class="fas fa-user-graduate"></i> Student Portal</a>
-                    </div>
-
                     <div class="login-footer">
                         <a href="../index.php" class="back-link">
                             <i class="fas fa-arrow-left"></i> Back to Website

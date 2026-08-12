@@ -12676,6 +12676,63 @@ body.fs-modal-open {
     color: #94a3b8;
     font-size: 0.85em;
 }
+.address-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+.address-block {
+    margin-bottom: 0;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+}
+.address-block-title {
+    margin: 0 0 14px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.address-block-title i {
+    color: #ea580c;
+}
+.address-same-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    cursor: pointer;
+    font-weight: 600;
+    color: #334155;
+}
+.address-same-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: #059669;
+    flex-shrink: 0;
+}
+.form-input.addr-permanent.is-readonly {
+    background: #f1f5f9;
+    color: #64748b;
+    cursor: not-allowed;
+}
+select.form-input.addr-permanent.is-readonly {
+    pointer-events: none;
+}
+@media (max-width: 900px) {
+    .address-split {
+        grid-template-columns: 1fr;
+    }
+}
 .section-icon-address { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
 .section-icon-bank    { background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; }
 .section-icon-medical { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }

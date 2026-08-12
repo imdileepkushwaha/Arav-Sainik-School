@@ -62,7 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmt = $pdo->prepare("UPDATE students SET
                 name=?, roll=?, class=?, section=?, dob=?, gender=?, mobile=?, email=?, category=?, status=?,
-                photo=?, current_address=?, permanent_address=?, previous_school=?, previous_class=?, previous_year=?, previous_tc_no=?,
+                photo=?, current_address=?, permanent_address=?,
+                current_address_line=?, current_city=?, current_state=?, current_country=?, current_pincode=?,
+                permanent_address_line=?, permanent_city=?, permanent_state=?, permanent_country=?, permanent_pincode=?,
+                previous_school=?, previous_class=?, previous_year=?, previous_tc_no=?,
                 bank_name=?, bank_branch=?, ifsc_code=?, blood_group=?, height=?, weight=?,
                 hostel_name=?, room_no=?, room_type=?, description=?
                 WHERE id=?");
@@ -74,11 +77,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $form_data['previous_tc_no'] = '';
             }
 
+            applyStudentAddressFromPost($form_data, $_POST);
+
             $stmt->execute([
                 $form_data['name'], $form_data['roll'], $form_data['class'], $form_data['section'],
                 $form_data['dob'], $form_data['gender'], $form_data['mobile'], $form_data['email'],
                 $form_data['category'], $form_data['status'], $photo,
                 $form_data['current_address'], $form_data['permanent_address'],
+                $form_data['current_address_line'], $form_data['current_city'], $form_data['current_state'], $form_data['current_country'], $form_data['current_pincode'],
+                $form_data['permanent_address_line'], $form_data['permanent_city'], $form_data['permanent_state'], $form_data['permanent_country'], $form_data['permanent_pincode'],
                 $form_data['previous_school'], $form_data['previous_class'], $form_data['previous_year'], $form_data['previous_tc_no'],
                 $form_data['bank_name'], $form_data['bank_branch'], $form_data['ifsc_code'],
                 $form_data['blood_group'], $form_data['height'], $form_data['weight'],

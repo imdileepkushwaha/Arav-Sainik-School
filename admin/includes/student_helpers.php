@@ -18,6 +18,16 @@ function ensureStudentSchema($pdo) {
         'suspended_at'      => "DATETIME DEFAULT NULL",
         'current_address'   => "TEXT DEFAULT NULL",
         'permanent_address' => "TEXT DEFAULT NULL",
+        'current_address_line' => "VARCHAR(255) DEFAULT NULL",
+        'current_city'         => "VARCHAR(100) DEFAULT NULL",
+        'current_state'        => "VARCHAR(100) DEFAULT NULL",
+        'current_country'      => "VARCHAR(100) DEFAULT NULL",
+        'current_pincode'      => "VARCHAR(20) DEFAULT NULL",
+        'permanent_address_line' => "VARCHAR(255) DEFAULT NULL",
+        'permanent_city'         => "VARCHAR(100) DEFAULT NULL",
+        'permanent_state'        => "VARCHAR(100) DEFAULT NULL",
+        'permanent_country'      => "VARCHAR(100) DEFAULT NULL",
+        'permanent_pincode'      => "VARCHAR(20) DEFAULT NULL",
         'previous_school'   => "VARCHAR(150) DEFAULT NULL",
         'previous_class'    => "VARCHAR(50) DEFAULT NULL",
         'previous_year'     => "VARCHAR(30) DEFAULT NULL",
@@ -296,6 +306,16 @@ function getDefaultStudentFormData() {
         'status'            => 'Active',
         'current_address'   => '',
         'permanent_address' => '',
+        'current_address_line' => '',
+        'current_city'         => '',
+        'current_state'        => '',
+        'current_country'      => 'India',
+        'current_pincode'      => '',
+        'permanent_address_line' => '',
+        'permanent_city'         => '',
+        'permanent_state'        => '',
+        'permanent_country'      => 'India',
+        'permanent_pincode'      => '',
         'previous_school'   => '',
         'previous_class'    => '',
         'previous_year'     => '',
@@ -320,6 +340,105 @@ function getDefaultStudentFormData() {
         'guardian_phone'    => '',
         'guardian_email'    => '',
     ];
+}
+
+function formatStudentAddressParts(array $parts) {
+    $bits = [
+        trim((string) ($parts['line'] ?? '')),
+        trim((string) ($parts['city'] ?? '')),
+        trim((string) ($parts['state'] ?? '')),
+        trim((string) ($parts['country'] ?? '')),
+        trim((string) ($parts['pincode'] ?? '')),
+    ];
+    $bits = array_values(array_filter($bits, static fn($v) => $v !== ''));
+    return implode(', ', $bits);
+}
+
+function getIndianStates() {
+    return [
+        'Andhra Pradesh',
+        'Arunachal Pradesh',
+        'Assam',
+        'Bihar',
+        'Chhattisgarh',
+        'Goa',
+        'Gujarat',
+        'Haryana',
+        'Himachal Pradesh',
+        'Jharkhand',
+        'Karnataka',
+        'Kerala',
+        'Madhya Pradesh',
+        'Maharashtra',
+        'Manipur',
+        'Meghalaya',
+        'Mizoram',
+        'Nagaland',
+        'Odisha',
+        'Punjab',
+        'Rajasthan',
+        'Sikkim',
+        'Tamil Nadu',
+        'Telangana',
+        'Tripura',
+        'Uttar Pradesh',
+        'Uttarakhand',
+        'West Bengal',
+        'Andaman and Nicobar Islands',
+        'Chandigarh',
+        'Dadra and Nagar Haveli and Daman and Diu',
+        'Delhi',
+        'Jammu and Kashmir',
+        'Ladakh',
+        'Lakshadweep',
+        'Puducherry',
+    ];
+}
+
+function applyStudentAddressFromPost(array &$form_data, array $post) {
+    $same = isset($post['same_as_current_address']);
+
+    if ($same) {
+        $form_data['permanent_address_line'] = $form_data['current_address_line'];
+        $form_data['permanent_city'] = $form_data['current_city'];
+        $form_data['permanent_state'] = $form_data['current_state'];
+        $form_data['permanent_country'] = $form_data['current_country'];
+        $form_data['permanent_pincode'] = $form_data['current_pincode'];
+    }
+
+    $form_data['current_address'] = formatStudentAddressParts([
+        'line' => $form_data['current_address_line'],
+        'city' => $form_data['current_city'],
+        'state' => $form_data['current_state'],
+        'country' => $form_data['current_country'],
+        'pincode' => $form_data['current_pincode'],
+    ]);
+    $form_data['permanent_address'] = formatStudentAddressParts([
+        'line' => $form_data['permanent_address_line'],
+        'city' => $form_data['permanent_city'],
+        'state' => $form_data['permanent_state'],
+        'country' => $form_data['permanent_country'],
+        'pincode' => $form_data['permanent_pincode'],
+    ]);
+}
+
+function hydrateStudentAddressFields(array &$data, array $student = []) {
+    $hasStructuredCurrent = trim(($student['current_address_line'] ?? '') . ($student['current_city'] ?? '') . ($student['current_state'] ?? '') . ($student['current_country'] ?? '') . ($student['current_pincode'] ?? '')) !== '';
+    if (!$hasStructuredCurrent && !empty($student['current_address'])) {
+        $data['current_address_line'] = $student['current_address'];
+    }
+
+    $hasStructuredPermanent = trim(($student['permanent_address_line'] ?? '') . ($student['permanent_city'] ?? '') . ($student['permanent_state'] ?? '') . ($student['permanent_country'] ?? '') . ($student['permanent_pincode'] ?? '')) !== '';
+    if (!$hasStructuredPermanent && !empty($student['permanent_address'])) {
+        $data['permanent_address_line'] = $student['permanent_address'];
+    }
+
+    if ($data['current_country'] === '') {
+        $data['current_country'] = 'India';
+    }
+    if ($data['permanent_country'] === '') {
+        $data['permanent_country'] = 'India';
+    }
 }
 
 function studentFromRow($student, $guardians = []) {
@@ -347,6 +466,7 @@ function studentFromRow($student, $guardians = []) {
             $data['guardian_email'] = $g['email'];
         }
     }
+    hydrateStudentAddressFields($data, $student);
     return $data;
 }
 
